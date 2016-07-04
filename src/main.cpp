@@ -21,10 +21,16 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define BTN_A     B01111111
 #define BTN_B     B10111111
 
+#define SCREEN_MENU 0
+#define SCREEN_GAME 1
+
+byte current_screen = SCREEN_MENU;
+
 byte controller_data = 0;
 
-byte xpos = 0;
-byte ypos = 0;
+int xpos = 0;
+int ypos = 0;
+bool input_latch = false;
 
 void setup() {
   display.begin();
@@ -60,25 +66,84 @@ void read_controller() {
   }
 }
 
-void loop() {
-  read_controller();
+byte screen_menu() {
+  if (controller_data == BTN_START) return SCREEN_GAME;
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print("ROUGELIKE");
+
+  display.setTextSize(1);
+  display.setCursor(0, 32);
+  display.print("Press START to begin");
+
+  display.display();
+
+  return SCREEN_MENU;
+}
+
+byte screen_game() {
+  switch (controller_data) {
+    case BTN_UP:
+      if (!input_latch) ypos -= 1;
+      input_latch = true;
+      break;
+    case BTN_LEFT:
+      if (!input_latch) xpos -= 1;
+      input_latch = true;
+      break;
+    case BTN_RIGHT:
+      if (!input_latch) xpos += 1;
+      input_latch = true;
+      break;
+    case BTN_DOWN:
+      if (!input_latch) ypos += 1;
+      input_latch = true;
+      break;
+    default:
+      input_latch = false;
+      break;
+    // case BTN_A: display.print("A"); break;
+    // case BTN_B: display.print("B"); break;
+    // case BTN_START: display.print("START"); break;
+    // case BTN_SELECT: display.print("SELECT"); break;
+  }
+
+  if (xpos < 0) xpos = 0;
+  if (xpos > 15) xpos = 15;
+  if (ypos < 0) ypos = 0;
+  if (ypos > 7) ypos = 7;
 
   // Reset display
   display.clearDisplay();
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(WHITE);
-  display.setCursor(0, 0);
 
-  switch (controller_data) {
-    case BTN_UP: display.print("UP"); break;
-    case BTN_LEFT: display.print("LEFT"); break;
-    case BTN_RIGHT: display.print("RIGHT"); break;
-    case BTN_DOWN: display.print("DOWN"); break;
-    case BTN_A: display.print("A"); break;
-    case BTN_B: display.print("B"); break;
-    case BTN_START: display.print("START"); break;
-    case BTN_SELECT: display.print("SELECT"); break;
-  }
+  display.setCursor(xpos*8, ypos*8);
+  display.print("@");
 
   display.display();
+
+  return SCREEN_GAME;
+}
+
+void loop() {
+  read_controller();
+  switch (current_screen) {
+    case SCREEN_MENU:
+      current_screen = screen_menu();
+      break;
+    case SCREEN_GAME:
+      current_screen = screen_game();
+      break;
+    default:
+      display.clearDisplay();
+      display.setCursor(0, 0);
+      display.print("Unknown screen.");
+      display.display();
+      break;
+  }
 }
