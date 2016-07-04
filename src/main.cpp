@@ -122,8 +122,16 @@ byte screen_game() {
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
+  for (int i = 0; i < 16; i++) {
+    for (int j = 0; j < 16; j++) {
+      display.setCursor(i * 8, j * 8);
+      display.print('.');
+    }
+  }
+
+  display.setTextColor(WHITE, BLACK);
   display.setCursor(xpos*8, ypos*8);
-  display.print("@");
+  display.print('@');
 
   display.display();
 
