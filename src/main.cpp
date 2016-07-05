@@ -46,6 +46,10 @@ byte facing = 0;
 byte equip_a = 0;
 byte equip_b = 0;
 
+bool in_bounds(int x, int y) {
+  return x >= 0 && y >= 0 && x < LEVEL_WIDTH && y < LEVEL_HEIGHT;
+}
+
 int to_index(int x, int y) {
   return y * LEVEL_WIDTH + x;
 }
@@ -112,31 +116,33 @@ byte screen_menu() {
 }
 
 byte screen_game() {
+  int nextx = xpos;
+  int nexty = ypos;
   switch (controller_data) {
     case BTN_UP:
       if (!input_latch) {
-        ypos -= 1;
+        nexty -= 1;
         facing = NORTH;
       }
       input_latch = true;
       break;
     case BTN_LEFT:
       if (!input_latch) {
-        xpos -= 1;
+        nextx -= 1;
         facing = WEST;
       }
       input_latch = true;
       break;
     case BTN_RIGHT:
       if (!input_latch) {
-        xpos += 1;
+        nextx += 1;
         facing = EAST;
       }
       input_latch = true;
       break;
     case BTN_DOWN:
       if (!input_latch) {
-        ypos += 1;
+        nexty += 1;
         facing = SOUTH;
       }
       input_latch = true;
@@ -153,18 +159,16 @@ byte screen_game() {
       break;
   }
 
-  if (xpos < 0) xpos = 0;
-  if (xpos >= LEVEL_WIDTH) xpos = LEVEL_WIDTH-1;
-  if (ypos < 0) ypos = 0;
-  if (ypos >= LEVEL_HEIGHT) ypos = LEVEL_HEIGHT-1;
+  if (in_bounds(nextx, nexty) && level[to_index(nextx, nexty)]==0) {
+    xpos = nextx;
+    ypos = nexty;
+  }
 
   int offsetx = 32;
   int offsety = 16;
 
   // Reset display
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
 
   for (int i = 0; i < LEVEL_WIDTH; i++) {
     for (int j = 0; j < LEVEL_HEIGHT; j++) {
