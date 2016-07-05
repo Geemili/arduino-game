@@ -168,8 +168,9 @@ byte screen_game() {
 
   for (int i = 0; i < LEVEL_WIDTH; i++) {
     for (int j = 0; j < LEVEL_HEIGHT; j++) {
-      display.setCursor(i * 8 + offsetx, j * 8 + offsety);
-      display.print(level[to_index(i, j)]==1 ? '+' : '.');
+      if(level[to_index(i, j)]==1) {
+        display.fillRect(i * 8 + offsetx, j * 8 + offsety, 8, 8, WHITE);
+      }
     }
   }
 
