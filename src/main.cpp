@@ -54,6 +54,24 @@ int to_index(int x, int y) {
   return y * LEVEL_WIDTH + x;
 }
 
+int facing_relative_x(byte dir) {
+  switch (dir) {
+    case NORTH: return 0;
+    case EAST: return 1;
+    case SOUTH: return 0;
+    case WEST: return -1;
+  }
+}
+
+int facing_relative_y(byte dir) {
+  switch (dir) {
+    case NORTH: return -1;
+    case EAST: return 0;
+    case SOUTH: return 1;
+    case WEST: return 0;
+  }
+}
+
 void setup() {
   display.begin();
   display.clearDisplay();
@@ -118,6 +136,8 @@ byte screen_menu() {
 byte screen_game() {
   int nextx = xpos;
   int nexty = ypos;
+  bool do_a = false;
+  bool do_b = false;
   switch (controller_data) {
     case BTN_UP:
       if (!input_latch) {
@@ -147,8 +167,14 @@ byte screen_game() {
       }
       input_latch = true;
       break;
-    // case BTN_A: display.print("A"); break;
-    // case BTN_B: display.print("B"); break;
+    case BTN_A:
+      if (!input_latch) do_a = true;
+      input_latch = true;
+      break;
+    case BTN_B:
+      if (!input_latch) do_b = true;
+      input_latch = true;
+      break;
     case BTN_START:
       if (!input_latch) return SCREEN_PAUSE;
       input_latch = true;
@@ -162,6 +188,36 @@ byte screen_game() {
   if (in_bounds(nextx, nexty) && level[to_index(nextx, nexty)]==0) {
     xpos = nextx;
     ypos = nexty;
+  }
+
+  if (do_a) {
+    int pickx = xpos + facing_relative_x(facing);
+    int picky = ypos + facing_relative_y(facing);
+    if (in_bounds(pickx, picky)) {
+      int index = to_index(pickx, picky);
+      if (equip_a == 0 && level[index]==1) {
+        equip_a = 1;
+        level[index] = 0;
+      } else if (equip_a == 1 && level[index]==0) {
+        equip_a = 0;
+        level[index] = 1;
+      }
+    }
+  }
+
+  if (do_b) {
+    int pickx = xpos + facing_relative_x(facing);
+    int picky = ypos + facing_relative_y(facing);
+    if (in_bounds(pickx, picky)) {
+      int index = to_index(pickx, picky);
+      if (equip_b == 0 && level[index]==1) {
+        equip_b = 1;
+        level[index] = 0;
+      } else if (equip_b == 1 && level[index]==0) {
+        equip_b = 0;
+        level[index] = 1;
+      }
+    }
   }
 
   int offsetx = 32;
