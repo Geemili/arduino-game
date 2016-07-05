@@ -36,12 +36,19 @@ byte current_screen = SCREEN_MENU;
 byte controller_data = 0;
 bool input_latch = false;
 
+#define LEVEL_WIDTH 8
+#define LEVEL_HEIGHT 8
+byte level[LEVEL_WIDTH * LEVEL_HEIGHT];
 
 int xpos = 0;
 int ypos = 0;
 byte facing = 0;
 byte equip_a = 0;
 byte equip_b = 0;
+
+int to_index(int x, int y) {
+  return y * LEVEL_WIDTH + x;
+}
 
 void setup() {
   display.begin();
@@ -54,6 +61,10 @@ void setup() {
 
   digitalWrite(NES_LATCH, HIGH);
   digitalWrite(NES_CLOCK, HIGH);
+
+  level[to_index(1, 0)] = 1;
+  level[to_index(3, 5)] = 1;
+  level[to_index(7, 7)] = 1;
 }
 
 void read_controller() {
@@ -143,34 +154,39 @@ byte screen_game() {
   }
 
   if (xpos < 0) xpos = 0;
-  if (xpos > 15) xpos = 15;
+  if (xpos >= LEVEL_WIDTH) xpos = LEVEL_WIDTH-1;
   if (ypos < 0) ypos = 0;
-  if (ypos > 7) ypos = 7;
+  if (ypos >= LEVEL_HEIGHT) ypos = LEVEL_HEIGHT-1;
+
+  int offsetx = 32;
+  int offsety = 16;
 
   // Reset display
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
 
-  for (int i = 0; i < 16; i++) {
-    for (int j = 2; j < 16; j++) {
-      display.setCursor(i * 8, j * 8);
-      display.print('.');
+  for (int i = 0; i < LEVEL_WIDTH; i++) {
+    for (int j = 0; j < LEVEL_HEIGHT; j++) {
+      display.setCursor(i * 8 + offsetx, j * 8 + offsety);
+      display.print(level[to_index(i, j)]==1 ? '+' : '.');
     }
   }
 
+  int pixelx = xpos*8+offsetx;
+  int pixely = ypos*8+offsety;
   switch (facing) {
     case NORTH:
-      display.fillTriangle(xpos*8, ypos*8+8, xpos*8+8, ypos*8+8, xpos*8+4, ypos*8, WHITE);
+      display.fillTriangle(pixelx, pixely+8, pixelx+8, pixely+8, pixelx+4, pixely, WHITE);
       break;
     case EAST:
-      display.fillTriangle(xpos*8, ypos*8, xpos*8, ypos*8+8, xpos*8+8, ypos*8+4, WHITE);
+      display.fillTriangle(pixelx, pixely, pixelx, pixely+8, pixelx+8, pixely+4, WHITE);
       break;
     case SOUTH:
-      display.fillTriangle(xpos*8, ypos*8, xpos*8+8, ypos*8, xpos*8+4, ypos*8+8, WHITE);
+      display.fillTriangle(pixelx, pixely, pixelx+8, pixely, pixelx+4, pixely+8, WHITE);
       break;
     case WEST:
-      display.fillTriangle(xpos*8+8, ypos*8, xpos*8+8, ypos*8+8, xpos*8, ypos*8+4, WHITE);
+      display.fillTriangle(pixelx+8, pixely, pixelx+8, pixely+8, pixelx, pixely+4, WHITE);
       break;
   }
 
