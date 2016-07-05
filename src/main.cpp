@@ -3,6 +3,9 @@
 #include <Adafruit_GFX.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
+#include "level.h"
+#include "direction.h"
+#include "offset.h"
 
 #ifndef OLED_RESET_PIN
 #define OLED_RESET_PIN 4
@@ -26,51 +29,12 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define SCREEN_PAUSE 2
 #define SCREEN_INVENTORY 3
 
-#define NORTH 0
-#define EAST 1
-#define SOUTH 2
-#define WEST 3
-
 byte current_screen = SCREEN_MENU;
 
 byte controller_data = 0;
 bool input_latch = false;
 
-#define LEVEL_WIDTH 8
-#define LEVEL_HEIGHT 8
-byte level[LEVEL_WIDTH * LEVEL_HEIGHT];
-
-int xpos = 0;
-int ypos = 0;
-byte facing = 0;
-byte equip_a = 0;
-byte equip_b = 0;
-
-bool in_bounds(int x, int y) {
-  return x >= 0 && y >= 0 && x < LEVEL_WIDTH && y < LEVEL_HEIGHT;
-}
-
-int to_index(int x, int y) {
-  return y * LEVEL_WIDTH + x;
-}
-
-int facing_relative_x(byte dir) {
-  switch (dir) {
-    case NORTH: return 0;
-    case EAST: return 1;
-    case SOUTH: return 0;
-    case WEST: return -1;
-  }
-}
-
-int facing_relative_y(byte dir) {
-  switch (dir) {
-    case NORTH: return -1;
-    case EAST: return 0;
-    case SOUTH: return 1;
-    case WEST: return 0;
-  }
-}
+Level *level;
 
 void setup() {
   display.begin();
@@ -83,10 +47,6 @@ void setup() {
 
   digitalWrite(NES_LATCH, HIGH);
   digitalWrite(NES_CLOCK, HIGH);
-
-  level[to_index(1, 0)] = 1;
-  level[to_index(3, 5)] = 1;
-  level[to_index(7, 7)] = 1;
 }
 
 void read_controller() {
@@ -115,7 +75,12 @@ bool is_pressed(byte button) {
 }
 
 byte screen_menu() {
-  if (controller_data == BTN_START) return SCREEN_GAME;
+  if (controller_data == BTN_START) {
+    level = new Level(8, 6);
+    level->set_wall(Pos{1, 0}, true);
+    level->set_wall(Pos{3, 5}, true);
+    return SCREEN_GAME;
+  }
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -134,36 +99,35 @@ byte screen_menu() {
 }
 
 byte screen_game() {
-  int nextx = xpos;
-  int nexty = ypos;
+  Offset player_offset = Offset{0,0};
   bool do_a = false;
   bool do_b = false;
   switch (controller_data) {
     case BTN_UP:
       if (!input_latch) {
-        nexty -= 1;
-        facing = NORTH;
+        player_offset.y -= 1;
+        level->player_dir = direction::NORTH;
       }
       input_latch = true;
       break;
     case BTN_LEFT:
       if (!input_latch) {
-        nextx -= 1;
-        facing = WEST;
+        player_offset.x -= 1;
+        level->player_dir = direction::WEST;
       }
       input_latch = true;
       break;
     case BTN_RIGHT:
       if (!input_latch) {
-        nextx += 1;
-        facing = EAST;
+        player_offset.x += 1;
+        level->player_dir = direction::EAST;
       }
       input_latch = true;
       break;
     case BTN_DOWN:
       if (!input_latch) {
-        nexty += 1;
-        facing = SOUTH;
+        player_offset.y += 1;
+        level->player_dir = direction::SOUTH;
       }
       input_latch = true;
       break;
@@ -185,39 +149,13 @@ byte screen_game() {
       break;
   }
 
-  if (in_bounds(nextx, nexty) && level[to_index(nextx, nexty)]==0) {
-    xpos = nextx;
-    ypos = nexty;
+  Pos next_pos = get_pos_offset(level->player_pos, player_offset);
+  if (!level->get_wall(next_pos)) {
+    level->player_pos = next_pos;
   }
 
-  if (do_a) {
-    int pickx = xpos + facing_relative_x(facing);
-    int picky = ypos + facing_relative_y(facing);
-    if (in_bounds(pickx, picky)) {
-      int index = to_index(pickx, picky);
-      if (equip_a == 0 && level[index]==1) {
-        equip_a = 1;
-        level[index] = 0;
-      } else if (equip_a == 1 && level[index]==0) {
-        equip_a = 0;
-        level[index] = 1;
-      }
-    }
-  }
-
-  if (do_b) {
-    int pickx = xpos + facing_relative_x(facing);
-    int picky = ypos + facing_relative_y(facing);
-    if (in_bounds(pickx, picky)) {
-      int index = to_index(pickx, picky);
-      if (equip_b == 0 && level[index]==1) {
-        equip_b = 1;
-        level[index] = 0;
-      } else if (equip_b == 1 && level[index]==0) {
-        equip_b = 0;
-        level[index] = 1;
-      }
-    }
+  if (do_a || do_b) {
+    //TODO
   }
 
   int offsetx = 32;
@@ -226,27 +164,27 @@ byte screen_game() {
   // Reset display
   display.clearDisplay();
 
-  for (int i = 0; i < LEVEL_WIDTH; i++) {
-    for (int j = 0; j < LEVEL_HEIGHT; j++) {
-      if(level[to_index(i, j)]==1) {
+  for (uint8_t i = 0; i < level->width; i++) {
+    for (uint8_t j = 0; j < level->height; j++) {
+      if(level->get_wall(Pos{i, j})) {
         display.fillRect(i * 8 + offsetx, j * 8 + offsety, 8, 8, WHITE);
       }
     }
   }
 
-  int pixelx = xpos*8+offsetx;
-  int pixely = ypos*8+offsety;
-  switch (facing) {
-    case NORTH:
+  int pixelx = level->player_pos.x * 8 + offsetx;
+  int pixely = level->player_pos.y * 8 + offsety;
+  switch (level->player_dir) {
+    case direction::NORTH:
       display.fillTriangle(pixelx, pixely+8, pixelx+8, pixely+8, pixelx+4, pixely, WHITE);
       break;
-    case EAST:
+    case direction::EAST:
       display.fillTriangle(pixelx, pixely, pixelx, pixely+8, pixelx+8, pixely+4, WHITE);
       break;
-    case SOUTH:
+    case direction::SOUTH:
       display.fillTriangle(pixelx, pixely, pixelx+8, pixely, pixelx+4, pixely+8, WHITE);
       break;
-    case WEST:
+    case direction::WEST:
       display.fillTriangle(pixelx+8, pixely, pixelx+8, pixely+8, pixelx, pixely+4, WHITE);
       break;
   }
@@ -254,10 +192,10 @@ byte screen_game() {
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
-  display.print("A:");
-  display.print(equip_a==1 ? '+' : ' ');
+  display.print("00 A:");
+  display.print(level->player_item_a!=NULL ? '+' : ' ');
   display.print(" B:");
-  display.print(equip_b==1 ? '+' : ' ');
+  display.print(level->player_item_b!=NULL ? '+' : ' ');
 
   display.display();
 
