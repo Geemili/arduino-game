@@ -66,11 +66,13 @@ class Level {
     ~Level();
     void update();
     bool id_is_active(Id id);
-    Crate *crate_at(Pos pos);
     bool player_won();
     void set_wall(Pos pos, bool value);
     bool get_wall(Pos pos);
+    Crate *crate_at(Pos pos);
     void pick_up_crate(Pos pos, bool item_slot_a);
+    Slot *slot_at(Pos pos);
+    bool is_open(Pos pos);
 };
 
 #endif

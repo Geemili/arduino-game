@@ -156,7 +156,7 @@ byte screen_game() {
   }
 
   Pos next_pos = get_pos_offset(level->player_pos, player_offset);
-  if (!level->get_wall(next_pos)) {
+  if (level->is_open(next_pos)) {
     level->player_pos = next_pos;
   }
 

@@ -50,6 +50,16 @@ Crate *Level::crate_at(Pos pos) {
   return NULL;
 }
 
+Slot *Level::slot_at(Pos pos) {
+  for (int i = 0; i < MAX_SLOTS; i++) {
+    if (this->slots[i] == NULL) continue;
+    if (this->slots[i]->pos.x == pos.x && this->slots[i]->pos.y == pos.y) {
+      return slots[i];
+    }
+  }
+  return NULL;
+}
+
 bool Level::player_won() {
   return this->player_pos.x == this->exit_pos.x && this->player_pos.y == this->exit_pos.y;
 }
@@ -74,4 +84,11 @@ void Level::pick_up_crate(Pos pos, bool item_slot_a) {
   //   this->player_item_a = crate;
   //   this->remove_crate(crate);
   // }
+}
+
+bool Level::is_open(Pos pos) {
+  if (this->get_wall(pos)) return false;
+  if (this->crate_at(pos)!=NULL) return false;
+  if (this->slot_at(pos)!=NULL) return false;
+  return true;
 }
