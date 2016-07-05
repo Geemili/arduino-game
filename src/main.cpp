@@ -23,14 +23,25 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 
 #define SCREEN_MENU 0
 #define SCREEN_GAME 1
+#define SCREEN_PAUSE 2
+#define SCREEN_INVENTORY 3
+
+#define NORTH 0
+#define EAST 1
+#define SOUTH 2
+#define WEST 3
 
 byte current_screen = SCREEN_MENU;
 
 byte controller_data = 0;
+bool input_latch = false;
+
 
 int xpos = 0;
 int ypos = 0;
-bool input_latch = false;
+byte facing = 0;
+byte equip_a = 0;
+byte equip_b = 0;
 
 void setup() {
   display.begin();
@@ -66,6 +77,10 @@ void read_controller() {
   }
 }
 
+bool is_pressed(byte button) {
+  return (controller_data | button) == button;
+}
+
 byte screen_menu() {
   if (controller_data == BTN_START) return SCREEN_GAME;
 
@@ -88,28 +103,43 @@ byte screen_menu() {
 byte screen_game() {
   switch (controller_data) {
     case BTN_UP:
-      if (!input_latch) ypos -= 1;
+      if (!input_latch) {
+        ypos -= 1;
+        facing = NORTH;
+      }
       input_latch = true;
       break;
     case BTN_LEFT:
-      if (!input_latch) xpos -= 1;
+      if (!input_latch) {
+        xpos -= 1;
+        facing = WEST;
+      }
       input_latch = true;
       break;
     case BTN_RIGHT:
-      if (!input_latch) xpos += 1;
+      if (!input_latch) {
+        xpos += 1;
+        facing = EAST;
+      }
       input_latch = true;
       break;
     case BTN_DOWN:
-      if (!input_latch) ypos += 1;
+      if (!input_latch) {
+        ypos += 1;
+        facing = SOUTH;
+      }
       input_latch = true;
-      break;
-    default:
-      input_latch = false;
       break;
     // case BTN_A: display.print("A"); break;
     // case BTN_B: display.print("B"); break;
-    // case BTN_START: display.print("START"); break;
+    case BTN_START:
+      if (!input_latch) return SCREEN_PAUSE;
+      input_latch = true;
+      break;
     // case BTN_SELECT: display.print("SELECT"); break;
+    default:
+      input_latch = false;
+      break;
   }
 
   if (xpos < 0) xpos = 0;
@@ -123,19 +153,110 @@ byte screen_game() {
   display.setTextColor(WHITE);
 
   for (int i = 0; i < 16; i++) {
-    for (int j = 0; j < 16; j++) {
+    for (int j = 2; j < 16; j++) {
       display.setCursor(i * 8, j * 8);
       display.print('.');
     }
   }
 
-  display.setTextColor(WHITE, BLACK);
-  display.setCursor(xpos*8, ypos*8);
-  display.print('@');
+  switch (facing) {
+    case NORTH:
+      display.fillTriangle(xpos*8, ypos*8+8, xpos*8+8, ypos*8+8, xpos*8+4, ypos*8, WHITE);
+      break;
+    case EAST:
+      display.fillTriangle(xpos*8, ypos*8, xpos*8, ypos*8+8, xpos*8+8, ypos*8+4, WHITE);
+      break;
+    case SOUTH:
+      display.fillTriangle(xpos*8, ypos*8, xpos*8+8, ypos*8, xpos*8+4, ypos*8+8, WHITE);
+      break;
+    case WEST:
+      display.fillTriangle(xpos*8+8, ypos*8, xpos*8+8, ypos*8+8, xpos*8, ypos*8+4, WHITE);
+      break;
+  }
+
+  display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  display.print("A:");
+  display.print(equip_a==1 ? '+' : ' ');
+  display.print(" B:");
+  display.print(equip_b==1 ? '+' : ' ');
 
   display.display();
 
   return SCREEN_GAME;
+}
+
+byte screen_pause() {
+  int selected = 0;
+  while (true) {
+    read_controller();
+
+    if (!input_latch && is_pressed(BTN_UP)) selected -= 1;
+    if (!input_latch && is_pressed(BTN_DOWN)) selected += 1;
+    input_latch = (is_pressed(BTN_DOWN) || is_pressed(BTN_UP));
+    if (selected > 1) selected = 0;
+    if (selected < 0) selected = 1;
+    if (is_pressed(BTN_A)) {
+        if (selected == 0) return SCREEN_GAME;
+        if (selected == 1) return SCREEN_MENU;
+    }
+
+    display.clearDisplay();
+    display.setTextColor(WHITE);
+
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+    display.print("PAUSE");
+
+    display.setTextSize(1);
+    display.setCursor(16, 32);
+    display.print("Continue");
+    display.setCursor(16, 40);
+    display.print("Quit");
+
+    if (selected == 0) display.setCursor(0,32);
+    if (selected == 1) display.setCursor(0,40);
+    display.print(">");
+
+    display.display();
+  }
+}
+
+byte screen_inventory() {
+  int selected = 0;
+  while (true) {
+    read_controller();
+
+    if (!input_latch && is_pressed(BTN_UP)) selected -= 1;
+    if (!input_latch && is_pressed(BTN_DOWN)) selected += 1;
+    input_latch = (is_pressed(BTN_DOWN) || is_pressed(BTN_UP));
+    if (selected > 1) selected = 0;
+    if (selected < 0) selected = 1;
+    if (is_pressed(BTN_A)) {
+        if (selected == 0) return SCREEN_GAME;
+        if (selected == 1) return SCREEN_MENU;
+    }
+
+    display.clearDisplay();
+    display.setTextColor(WHITE);
+
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+    display.print("INVENTORY");
+
+    display.setTextSize(1);
+    display.setCursor(16, 32);
+    display.print("Continue");
+    display.setCursor(16, 40);
+    display.print("Quit");
+
+    if (selected == 0) display.setCursor(0,32);
+    if (selected == 1) display.setCursor(0,40);
+    display.print(">");
+
+    display.display();
+  }
 }
 
 void loop() {
@@ -146,6 +267,9 @@ void loop() {
       break;
     case SCREEN_GAME:
       current_screen = screen_game();
+      break;
+    case SCREEN_PAUSE:
+      current_screen = screen_pause();
       break;
     default:
       display.clearDisplay();
