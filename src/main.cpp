@@ -6,6 +6,7 @@
 #include "level.h"
 #include "direction.h"
 #include "offset.h"
+#include "shapes.h"
 
 #ifndef OLED_RESET_PIN
 #define OLED_RESET_PIN 4
@@ -79,6 +80,9 @@ byte screen_menu() {
     level = new Level(8, 6);
     level->set_wall(Pos{1, 0}, true);
     level->set_wall(Pos{3, 5}, true);
+    level->crates[0] = new Crate{Pos{2,0}, shapes::CRATE_HORIZONTAL};
+    level->crates[1] = new Crate{Pos{3,0}, shapes::CRATE_VERTICAL};
+    level->crates[2] = new Crate{Pos{4,0}, shapes::CRATE_SMALL};
     return SCREEN_GAME;
   }
 
@@ -168,6 +172,23 @@ byte screen_game() {
     for (uint8_t j = 0; j < level->height; j++) {
       if(level->get_wall(Pos{i, j})) {
         display.fillRect(i * 8 + offsetx, j * 8 + offsety, 8, 8, WHITE);
+      }
+    }
+  }
+
+  for (uint8_t i = 0; i < MAX_CRATES; i++) {
+    Crate *crate = level->crates[i];
+    if (crate != NULL) {
+      switch (crate->shape) {
+        case shapes::CRATE_HORIZONTAL:
+          display.fillRect(crate->pos.x * 8 + offsetx, crate->pos.y * 8 + 2 + offsety, 8, 4, WHITE);
+          break;
+        case shapes::CRATE_VERTICAL:
+          display.fillRect(crate->pos.x * 8 + 2 + offsetx, crate->pos.y * 8 + offsety, 4, 8, WHITE);
+          break;
+        case shapes::CRATE_SMALL:
+          display.fillRect(crate->pos.x * 8 + 2 + offsetx, crate->pos.y * 8 + 2 + offsety, 4, 4, WHITE);
+          break;
       }
     }
   }

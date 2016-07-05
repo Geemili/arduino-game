@@ -13,7 +13,10 @@ Level::Level(uint8_t width, uint8_t height) {
   this->exit_pos = Pos{0, 0};
 
   this->walls = new bool[this->width * this->height];
-  for (int i=0; i<this->width*this->height; i++) walls[i] = false;
+  for (int i=0; i<this->width*this->height; i++) this->walls[i] = false;
+  for (int i=0; i<MAX_CRATES; i++) this->crates[i] = NULL;
+  for (int i=0; i<MAX_SLOTS; i++) this->slots[i] = NULL;
+  for (int i=0; i<MAX_DOORS; i++) this->doors[i] = NULL;
 }
 
 Level::~Level() {
