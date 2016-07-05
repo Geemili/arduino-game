@@ -36,7 +36,7 @@ struct Slot {
   public:
     Id id;
     Pos pos;
-    shapes::WallShape shape;
+    shapes::SlotShape shape;
 };
 
 struct Door {

@@ -83,6 +83,8 @@ byte screen_menu() {
     level->crates[0] = new Crate{Pos{2,0}, shapes::CRATE_HORIZONTAL};
     level->crates[1] = new Crate{Pos{3,0}, shapes::CRATE_VERTICAL};
     level->crates[2] = new Crate{Pos{4,0}, shapes::CRATE_SMALL};
+    level->slots[0] = new Slot{0, Pos{0,5}, shapes::SLOT_HORIZONTAL};
+    level->slots[1] = new Slot{0, Pos{1,5}, shapes::SLOT_VERTICAL};
     return SCREEN_GAME;
   }
 
@@ -172,6 +174,21 @@ byte screen_game() {
     for (uint8_t j = 0; j < level->height; j++) {
       if(level->get_wall(Pos{i, j})) {
         display.fillRect(i * 8 + offsetx, j * 8 + offsety, 8, 8, WHITE);
+      }
+    }
+  }
+
+  for (uint8_t i = 0; i < MAX_SLOTS; i++) {
+    Slot *slot = level->slots[i];
+    if (slot != NULL) {
+      display.fillRoundRect(slot->pos.x * 8 + offsetx, slot->pos.y * 8 + offsety, 8, 8, 1, WHITE);
+      switch (slot->shape) {
+        case shapes::SLOT_HORIZONTAL:
+          display.fillRect(slot->pos.x * 8 + 1 + offsetx, slot->pos.y * 8 + 2 + offsety, 6, 4, BLACK);
+          break;
+        case shapes::SLOT_VERTICAL:
+          display.fillRect(slot->pos.x * 8 + 2 + offsetx, slot->pos.y * 8 + 1 + offsety, 4, 6, BLACK);
+          break;
       }
     }
   }

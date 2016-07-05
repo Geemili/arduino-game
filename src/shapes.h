@@ -5,9 +5,9 @@
 #include <Arduino.h>
 
 namespace shapes {
-  enum WallShape {
-    WALL_VERTICAL,
-    WALL_HORIZONTAL
+  enum SlotShape {
+    SLOT_VERTICAL,
+    SLOT_HORIZONTAL
   };
 
   enum CrateShape {
@@ -16,7 +16,7 @@ namespace shapes {
     CRATE_HORIZONTAL
   };
 
-  bool shape_fits(CrateShape c, WallShape w);
+  bool shape_fits(CrateShape c, SlotShape w);
 }
 
 #endif
