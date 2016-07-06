@@ -29,13 +29,15 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define SCREEN_MENU 0
 #define SCREEN_GAME 1
 #define SCREEN_PAUSE 2
-#define SCREEN_INVENTORY 3
+#define SCREEN_LOAD_LEVEL 3
 
 byte current_screen = SCREEN_MENU;
 
 byte controller_data = 0;
 bool input_latch = false;
 
+// Tells SCREEN_LOAD_LEVEL which one to load and SCREEN_GAME which number to display
+uint8_t level_num = 0;
 Level *level;
 
 void setup() {
@@ -78,8 +80,8 @@ bool is_pressed(byte button) {
 
 byte screen_menu() {
   if (controller_data == BTN_START) {
-    level = load_level(0);
-    return SCREEN_GAME;
+    level_num = 0;
+    return SCREEN_LOAD_LEVEL;
   }
 
   display.clearDisplay();
@@ -249,7 +251,8 @@ byte screen_game() {
   display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0, 0);
-  display.print("00 A:");
+  display.print(level_num, HEX);
+  display.print(" A:");
   display.print(level->player_item_a!=NULL ? '+' : ' ');
   display.print(" B:");
   display.print(level->player_item_b!=NULL ? '+' : ' ');
@@ -295,40 +298,18 @@ byte screen_pause() {
   }
 }
 
-byte screen_inventory() {
-  int selected = 0;
-  while (true) {
-    read_controller();
+byte screen_load_level() {
+  display.clearDisplay();
+  display.setTextColor(WHITE);
 
-    if (!input_latch && is_pressed(BTN_UP)) selected -= 1;
-    if (!input_latch && is_pressed(BTN_DOWN)) selected += 1;
-    input_latch = (is_pressed(BTN_DOWN) || is_pressed(BTN_UP));
-    if (selected > 1) selected = 0;
-    if (selected < 0) selected = 1;
-    if (is_pressed(BTN_A)) {
-        if (selected == 0) return SCREEN_GAME;
-        if (selected == 1) return SCREEN_MENU;
-    }
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print("LOADING...");
 
-    display.clearDisplay();
-    display.setTextColor(WHITE);
+  display.display();
 
-    display.setTextSize(2);
-    display.setCursor(0, 0);
-    display.print("INVENTORY");
-
-    display.setTextSize(1);
-    display.setCursor(16, 32);
-    display.print("Continue");
-    display.setCursor(16, 40);
-    display.print("Quit");
-
-    if (selected == 0) display.setCursor(0,32);
-    if (selected == 1) display.setCursor(0,40);
-    display.print(">");
-
-    display.display();
-  }
+  level = load_level(level_num);
+  return SCREEN_GAME;
 }
 
 void loop() {
@@ -342,6 +323,9 @@ void loop() {
       break;
     case SCREEN_PAUSE:
       current_screen = screen_pause();
+      break;
+    case SCREEN_LOAD_LEVEL:
+      current_screen = screen_load_level();
       break;
     default:
       display.clearDisplay();
