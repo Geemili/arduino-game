@@ -189,8 +189,8 @@ byte screen_game() {
 
   level->update();
 
-  int offsetx = 32;
-  int offsety = 16;
+  int offsetx = 64 - level->player_pos.x * 8 - 4;
+  int offsety = 40 - level->player_pos.y * 8 - 4;
 
   // Reset display
   display.clearDisplay();
@@ -266,6 +266,7 @@ byte screen_game() {
       break;
   }
 
+  display.fillRect(0, 0, 128, 16, BLACK);
   display.setTextSize(2);
   display.setTextColor(WHITE);
 
