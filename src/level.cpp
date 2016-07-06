@@ -55,6 +55,16 @@ Crate *Level::crate_at(Pos pos) {
   return NULL;
 }
 
+uint8_t Level::add_crate(Crate *crate) {
+  for (int i = 0; i < MAX_CRATES; i++) {
+    if (this->crates[i] == NULL) {
+      this->crates[i] = crate;
+      return i;
+    }
+  }
+  return -1;
+}
+
 uint8_t Level::index_of_crate_at(Pos pos) {
   for (int i = 0; i < MAX_CRATES; i++) {
     if (this->crates[i] == NULL) continue;
@@ -100,6 +110,32 @@ void Level::pick_up_crate(Pos pos, bool item_slot_a) {
     if (item_slot_a) this->player_item_a = this->crates[crate];
     else this->player_item_b = this->crates[crate];
     this->crates[crate] = NULL;
+  }
+}
+
+void Level::place_crate(Pos pos, bool item_slot_a) {
+  if (item_slot_a && this->player_item_a == NULL) return;
+  else if (!item_slot_a && this->player_item_b == NULL) return;
+  bool wall = this->get_wall(pos);
+  Crate *other_crate = this->crate_at(pos);
+  Slot *slot = this->slot_at(pos);
+  if (!wall && other_crate == NULL) {
+    Crate *crate;
+    if (item_slot_a) {
+      crate = this->player_item_a;
+    } else {
+      crate = this->player_item_b;
+    }
+
+    if (slot == NULL || shapes::shape_fits(crate->shape, slot->shape)) {
+      crate->pos = pos;
+      this->add_crate(crate);
+      if (item_slot_a) {
+        this->player_item_a = NULL;
+      } else {
+        this->player_item_b = NULL;
+      }
+    }
   }
 }
 

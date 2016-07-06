@@ -166,6 +166,10 @@ byte screen_game() {
       level->pick_up_crate(pick_pos, true);
     } else if (do_b && level->player_item_b==NULL) {
       level->pick_up_crate(pick_pos, false);
+    } else if (do_a && level->player_item_a!=NULL) {
+      level->place_crate(pick_pos, true);
+    } else if (do_b && level->player_item_b!=NULL) {
+      level->place_crate(pick_pos, false);
     }
   }
 

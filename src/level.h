@@ -68,8 +68,10 @@ class Level {
     bool player_won();
     void set_wall(Pos pos, bool value);
     bool get_wall(Pos pos);
+    uint8_t add_crate(Crate *crate);
     Crate *crate_at(Pos pos);
     uint8_t index_of_crate_at(Pos pos);
+    void place_crate(Pos pos, bool item_slot_a);
     void pick_up_crate(Pos pos, bool item_slot_a);
     Slot *slot_at(Pos pos);
     bool is_open(Pos pos);
