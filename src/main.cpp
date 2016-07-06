@@ -227,6 +227,8 @@ byte screen_game() {
     }
   }
 
+  display.drawRoundRect(level->exit_pos.x * 8 + 1 + offsetx, level->exit_pos.y * 8 + 1 + offsety, 6, 6, 2, WHITE);
+
   int pixelx = level->player_pos.x * 8 + offsetx;
   int pixely = level->player_pos.y * 8 + offsety;
   switch (level->player_dir) {

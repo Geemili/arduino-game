@@ -18,7 +18,7 @@ Level *load_level(uint8_t level_num) {
         case '#':
           level->walls[tile_index] = true;
           break;
-        case 'e':
+        case '!':
           level->exit_pos = Pos{i, j};
           break;
         case '@':
