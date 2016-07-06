@@ -40,9 +40,10 @@ const PROGMEM char LEVEL_04[] =
 ##f#####";
 
 const PROGMEM char LEVEL_FF[] =
-"\x09\x04\
+"\x09\x05\
 #a##b##h#\
 #@......#\
+#.......#\
 #0kl1.m2#\
 #########";
 
