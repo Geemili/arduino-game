@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include "level.h"
+#include "level_loader.h"
 #include "direction.h"
 #include "offset.h"
 #include "shapes.h"
@@ -77,24 +78,7 @@ bool is_pressed(byte button) {
 
 byte screen_menu() {
   if (controller_data == BTN_START) {
-    level = new Level(8, 6);
-    level->set_wall(Pos{1, 0}, true);
-    level->set_wall(Pos{3, 5}, true);
-    level->set_wall(Pos{7, 5}, true);
-    level->set_wall(Pos{7, 4}, true);
-    level->set_wall(Pos{7, 3}, true);
-    level->set_wall(Pos{7, 2}, true);
-    level->set_wall(Pos{5, 5}, true);
-    level->set_wall(Pos{5, 4}, true);
-    level->set_wall(Pos{5, 3}, true);
-    level->set_wall(Pos{5, 2}, true);
-    level->add_crate(new Crate{Pos{2,0}, shapes::CRATE_HORIZONTAL});
-    level->add_crate(new Crate{Pos{3,0}, shapes::CRATE_VERTICAL});
-    level->add_crate(new Crate{Pos{4,0}, shapes::CRATE_SMALL});
-    level->slots[0] = new Slot{0, Pos{0,5}, shapes::SLOT_HORIZONTAL};
-    level->slots[1] = new Slot{1, Pos{1,5}, shapes::SLOT_VERTICAL};
-    level->doors[0] = new Door{Pos{6, 2}, 0};
-    level->doors[1] = new Door{Pos{6, 4}, 1};
+    level = load_level(0);
     return SCREEN_GAME;
   }
 
