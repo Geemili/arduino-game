@@ -80,11 +80,21 @@ byte screen_menu() {
     level = new Level(8, 6);
     level->set_wall(Pos{1, 0}, true);
     level->set_wall(Pos{3, 5}, true);
-    level->crates[0] = new Crate{Pos{2,0}, shapes::CRATE_HORIZONTAL};
-    level->crates[1] = new Crate{Pos{3,0}, shapes::CRATE_VERTICAL};
-    level->crates[2] = new Crate{Pos{4,0}, shapes::CRATE_SMALL};
+    level->set_wall(Pos{7, 5}, true);
+    level->set_wall(Pos{7, 4}, true);
+    level->set_wall(Pos{7, 3}, true);
+    level->set_wall(Pos{7, 2}, true);
+    level->set_wall(Pos{5, 5}, true);
+    level->set_wall(Pos{5, 4}, true);
+    level->set_wall(Pos{5, 3}, true);
+    level->set_wall(Pos{5, 2}, true);
+    level->add_crate(new Crate{Pos{2,0}, shapes::CRATE_HORIZONTAL});
+    level->add_crate(new Crate{Pos{3,0}, shapes::CRATE_VERTICAL});
+    level->add_crate(new Crate{Pos{4,0}, shapes::CRATE_SMALL});
     level->slots[0] = new Slot{0, Pos{0,5}, shapes::SLOT_HORIZONTAL};
-    level->slots[1] = new Slot{0, Pos{1,5}, shapes::SLOT_VERTICAL};
+    level->slots[1] = new Slot{1, Pos{1,5}, shapes::SLOT_VERTICAL};
+    level->doors[0] = new Door{Pos{6, 2}, 0};
+    level->doors[1] = new Door{Pos{6, 4}, 1};
     return SCREEN_GAME;
   }
 
@@ -173,6 +183,8 @@ byte screen_game() {
     }
   }
 
+  level->update();
+
   int offsetx = 32;
   int offsety = 16;
 
@@ -215,6 +227,18 @@ byte screen_game() {
         case shapes::CRATE_SMALL:
           display.fillRect(crate->pos.x * 8 + 2 + offsetx, crate->pos.y * 8 + 2 + offsety, 4, 4, WHITE);
           break;
+      }
+    }
+  }
+
+  for (uint8_t i = 0; i < MAX_DOORS; i++) {
+    Door *door = level->doors[i];
+    if (door != NULL) {
+      if (level->id_is_active(door->key)) {
+        display.drawRect(door->pos.x * 8 + offsetx, door->pos.y * 8 + offsety, 8, 8, WHITE);
+      } else {
+        display.fillRect(door->pos.x * 8 + offsetx, door->pos.y * 8 + offsety, 8, 8, WHITE);
+        display.fillCircle(door->pos.x * 8 + 4 + offsetx, door->pos.y * 8 + 4 + offsety, 1, BLACK);
       }
     }
   }

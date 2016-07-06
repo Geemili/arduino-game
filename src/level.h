@@ -64,7 +64,6 @@ class Level {
     Level(uint8_t width, uint8_t height);
     ~Level();
     void update();
-    bool id_is_active(Id id);
     bool player_won();
     void set_wall(Pos pos, bool value);
     bool get_wall(Pos pos);
@@ -75,6 +74,8 @@ class Level {
     void pick_up_crate(Pos pos, bool item_slot_a);
     Slot *slot_at(Pos pos);
     bool is_open(Pos pos);
+    Door *door_at(Pos pos);
+    bool id_is_active(Id id);
 };
 
 #endif

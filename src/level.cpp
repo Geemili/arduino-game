@@ -29,15 +29,14 @@ Level::~Level() {
 }
 
 void Level::update() {
-  bool ids[MAX_ID];
+  for (int i = 0; i < MAX_SLOTS; i++) {
+    this->ids[i] = false;
+  }
   for (int i = 0; i < MAX_SLOTS; i++) {
     Crate *crate = crate_at(slots[i]->pos);
     if (crate != NULL) {
       ids[slots[i]->id] = true;
     }
-  }
-  for (int i = 0; i < MAX_ID; i++) {
-    this->ids[i] = ids[i];
   }
 }
 
@@ -80,6 +79,16 @@ Slot *Level::slot_at(Pos pos) {
     if (this->slots[i] == NULL) continue;
     if (this->slots[i]->pos.x == pos.x && this->slots[i]->pos.y == pos.y) {
       return slots[i];
+    }
+  }
+  return NULL;
+}
+
+Door *Level::door_at(Pos pos) {
+  for (int i = 0; i < MAX_DOORS; i++) {
+    if (this->doors[i] == NULL) continue;
+    if (this->doors[i]->pos.x == pos.x && this->doors[i]->pos.y == pos.y) {
+      return doors[i];
     }
   }
   return NULL;
@@ -143,5 +152,7 @@ bool Level::is_open(Pos pos) {
   if (this->get_wall(pos)) return false;
   if (this->crate_at(pos)!=NULL) return false;
   if (this->slot_at(pos)!=NULL) return false;
+  Door *door = this->door_at(pos);
+  if (door!=NULL && !this->id_is_active(door->key)) return false;
   return true;
 }
