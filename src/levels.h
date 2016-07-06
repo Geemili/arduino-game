@@ -5,22 +5,19 @@
 #include <avr/pgmspace.h>
 
 const PROGMEM char LEVEL_00[] =
-"\x08\x04\
-........\
+"\x08\x03\
 ########\
 #@....!#\
 ########";
 
 const PROGMEM char LEVEL_01[] =
-"\x08\x04\
-........\
+"\x08\x03\
 ########\
 #@..k.!#\
 ########";
 
 const PROGMEM char LEVEL_02[] =
-"\x08\x04\
-........\
+"\x08\x03\
 ####a###\
 #@..k0!#\
 ########";
@@ -33,10 +30,11 @@ const PROGMEM char LEVEL_03[] =
 ##b#####";
 
 const PROGMEM char LEVEL_04[] =
-"\x08\x04\
-........\
+"\x08\x05\
 ##b#####\
-#@l0k1!#\
+#@.l.1!#\
+#.######\
+#...0.k#\
 ##f#####";
 
 const PROGMEM char LEVEL_FF[] =
