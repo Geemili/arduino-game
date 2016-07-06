@@ -20,6 +20,11 @@
 #define CHAR_SLOT_H2 'h'
 #define CHAR_SLOT_H3 'i'
 
+#define CHAR_DOOR_0 '0'
+#define CHAR_DOOR_1 '1'
+#define CHAR_DOOR_2 '2'
+#define CHAR_DOOR_3 '3'
+
 Level *load_level(uint8_t level_num) {
   PGM_P level_address = get_level_address(level_num);
   // TODO: Make use of this. Ignoring length check right now
@@ -44,6 +49,12 @@ Level *load_level(uint8_t level_num) {
           break;
         case CHAR_CRATE_V:
           level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_VERTICAL});
+          break;
+        case CHAR_DOOR_0:
+          level->add_door(new Door{Pos{i, j}, 0});
+          break;
+        case CHAR_SLOT_V0:
+          level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_VERTICAL});
           break;
         default: break; // Ignore everything else
       }

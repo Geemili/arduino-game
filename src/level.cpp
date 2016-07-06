@@ -61,7 +61,27 @@ uint8_t Level::add_crate(Crate *crate) {
       return i;
     }
   }
-  return -1;
+  return MAX_CRATES;
+}
+
+uint8_t Level::add_door(Door *door) {
+  for (int i = 0; i < MAX_DOORS; i++) {
+    if (this->doors[i] == NULL) {
+      this->doors[i] = door;
+      return i;
+    }
+  }
+  return MAX_DOORS;
+}
+
+uint8_t Level::add_slot(Slot *slot) {
+  for (int i = 0; i < MAX_SLOTS; i++) {
+    if (this->slots[i] == NULL) {
+      this->slots[i] = slot;
+      return i;
+    }
+  }
+  return MAX_SLOTS;
 }
 
 uint8_t Level::index_of_crate_at(Pos pos) {

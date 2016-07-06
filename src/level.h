@@ -72,8 +72,10 @@ class Level {
     uint8_t index_of_crate_at(Pos pos);
     void place_crate(Pos pos, bool item_slot_a);
     void pick_up_crate(Pos pos, bool item_slot_a);
+    uint8_t add_slot(Slot *slot);
     Slot *slot_at(Pos pos);
     bool is_open(Pos pos);
+    uint8_t add_door(Door *door);
     Door *door_at(Pos pos);
     bool id_is_active(Id id);
 };

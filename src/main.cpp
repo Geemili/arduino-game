@@ -78,6 +78,20 @@ bool is_pressed(byte button) {
   return (controller_data | button) == button;
 }
 
+void draw_ui_crate(int offset, shapes::CrateShape shape) {
+  switch (shape) {
+    case shapes::CRATE_HORIZONTAL:
+      display.fillRect(offset, 4, 16, 8, WHITE);
+      break;
+    case shapes::CRATE_VERTICAL:
+      display.fillRect(offset + 4, 0, 8, 16, WHITE);
+      break;
+    case shapes::CRATE_SMALL:
+      display.fillRect(offset + 4, 4, 8, 8, WHITE);
+      break;
+  }
+}
+
 byte screen_menu() {
   if (controller_data == BTN_START) {
     level_num = 0;
@@ -250,12 +264,25 @@ byte screen_game() {
 
   display.setTextSize(2);
   display.setTextColor(WHITE);
+
   display.setCursor(0, 0);
   display.print(level_num, HEX);
-  display.print(" A:");
-  display.print(level->player_item_a!=NULL ? '+' : ' ');
-  display.print(" B:");
-  display.print(level->player_item_b!=NULL ? '+' : ' ');
+
+  int crate_offset = 16;
+
+  int offset_a = 40;
+  display.setCursor(offset_a, 0);
+  display.print("A");
+  if (level->player_item_a!=NULL) {
+    draw_ui_crate(offset_a + crate_offset, level->player_item_a->shape);
+  }
+
+  int offset_b = 80;
+  display.setCursor(80, 0);//0 16 32 48 64 80 96 112 128
+  display.print("B");
+  if (level->player_item_b!=NULL) {
+    draw_ui_crate(offset_b + crate_offset, level->player_item_b->shape);
+  }
 
   display.display();
 
