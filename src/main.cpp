@@ -259,6 +259,10 @@ byte screen_game() {
 
   display.display();
 
+  if (level->player_won()) {
+    level_num++;
+    return SCREEN_LOAD_LEVEL;
+  }
   return SCREEN_GAME;
 }
 
@@ -308,6 +312,9 @@ byte screen_load_level() {
 
   display.display();
 
+  if (level != NULL) {
+    delete level;
+  }
   level = load_level(level_num);
   return SCREEN_GAME;
 }
