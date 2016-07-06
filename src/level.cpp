@@ -21,6 +21,11 @@ Level::Level(uint8_t width, uint8_t height) {
 
 Level::~Level() {
   delete [] this->walls;
+  delete [] this->player_item_a;
+  delete [] this->player_item_b;
+  for (int i=0; i<MAX_CRATES; i++) delete this->crates[i];
+  for (int i=0; i<MAX_SLOTS; i++) delete this->slots[i];
+  for (int i=0; i<MAX_DOORS; i++) delete this->doors[i];
 }
 
 void Level::update() {
@@ -48,6 +53,16 @@ Crate *Level::crate_at(Pos pos) {
     }
   }
   return NULL;
+}
+
+uint8_t Level::index_of_crate_at(Pos pos) {
+  for (int i = 0; i < MAX_CRATES; i++) {
+    if (this->crates[i] == NULL) continue;
+    if (this->crates[i]->pos.x == pos.x && this->crates[i]->pos.y == pos.y) {
+      return i;
+    }
+  }
+  return MAX_CRATES;
 }
 
 Slot *Level::slot_at(Pos pos) {
@@ -78,12 +93,14 @@ void Level::set_wall(Pos pos, bool value) {
 }
 
 void Level::pick_up_crate(Pos pos, bool item_slot_a) {
-  // TODO
-  // Crate *crate = this->crate_at(pos);
-  // if (crate != NULL) {
-  //   this->player_item_a = crate;
-  //   this->remove_crate(crate);
-  // }
+  if (item_slot_a && this->player_item_a != NULL) return;
+  else if (!item_slot_a && this->player_item_b != NULL) return;
+  uint8_t crate = this->index_of_crate_at(pos);
+  if (crate != MAX_CRATES) {
+    if (item_slot_a) this->player_item_a = this->crates[crate];
+    else this->player_item_b = this->crates[crate];
+    this->crates[crate] = NULL;
+  }
 }
 
 bool Level::is_open(Pos pos) {

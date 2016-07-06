@@ -24,7 +24,6 @@
 #include "pos.h"
 
 typedef uint8_t Id;
-typedef uint8_t Direction;
 
 struct Crate {
   public:
@@ -48,7 +47,7 @@ struct Door {
 class Level {
   public:
     Pos player_pos;
-    Direction player_dir;
+    direction::Direction player_dir;
     Crate *player_item_a;
     Crate *player_item_b;
 
@@ -70,6 +69,7 @@ class Level {
     void set_wall(Pos pos, bool value);
     bool get_wall(Pos pos);
     Crate *crate_at(Pos pos);
+    uint8_t index_of_crate_at(Pos pos);
     void pick_up_crate(Pos pos, bool item_slot_a);
     Slot *slot_at(Pos pos);
     bool is_open(Pos pos);

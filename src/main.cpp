@@ -161,7 +161,12 @@ byte screen_game() {
   }
 
   if (do_a || do_b) {
-    //TODO
+    Pos pick_pos = get_pos_offset(level->player_pos, direction::offset(level->player_dir));
+    if (do_a && level->player_item_a==NULL) {
+      level->pick_up_crate(pick_pos, true);
+    } else if (do_b && level->player_item_b==NULL) {
+      level->pick_up_crate(pick_pos, false);
+    }
   }
 
   int offsetx = 32;
