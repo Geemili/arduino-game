@@ -30,6 +30,7 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define SCREEN_GAME 1
 #define SCREEN_PAUSE 2
 #define SCREEN_LOAD_LEVEL 3
+#define SCREEN_SELECT_LEVEL 4
 
 byte current_screen = SCREEN_MENU;
 
@@ -96,6 +97,9 @@ byte screen_menu() {
   if (controller_data == BTN_START) {
     level_num = 0;
     return SCREEN_LOAD_LEVEL;
+  }
+  if (controller_data == BTN_SELECT) {
+    return SCREEN_SELECT_LEVEL;
   }
 
   display.clearDisplay();
@@ -346,6 +350,47 @@ byte screen_load_level() {
   return SCREEN_GAME;
 }
 
+byte screen_select_level() {
+  switch (controller_data) {
+    case BTN_UP:
+      if (!input_latch) {
+        level_num++;
+      }
+      input_latch = true;
+      break;
+    case BTN_DOWN:
+      if (!input_latch) {
+        level_num--;
+      }
+      input_latch = true;
+      break;
+    case BTN_A:
+      if (!input_latch) return SCREEN_LOAD_LEVEL;
+      input_latch = true;
+      break;
+    case BTN_B: return SCREEN_MENU;
+    default:
+      input_latch = false;
+      break;
+  }
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print("Pick Level");
+
+  display.setTextSize(5);
+  display.setCursor(16, 16);
+  char buf[3];
+  sprintf(buf, "%3d", level_num);
+  display.print(buf);
+
+  display.display();
+  return SCREEN_SELECT_LEVEL;
+}
+
 void loop() {
   read_controller();
   switch (current_screen) {
@@ -360,6 +405,9 @@ void loop() {
       break;
     case SCREEN_LOAD_LEVEL:
       current_screen = screen_load_level();
+      break;
+    case SCREEN_SELECT_LEVEL:
+      current_screen = screen_select_level();
       break;
     default:
       display.clearDisplay();

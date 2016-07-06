@@ -50,11 +50,26 @@ Level *load_level(uint8_t level_num) {
         case CHAR_CRATE_V:
           level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_VERTICAL});
           break;
+        case CHAR_CRATE_H:
+          level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_HORIZONTAL});
+          break;
         case CHAR_DOOR_0:
           level->add_door(new Door{Pos{i, j}, 0});
           break;
+        case CHAR_DOOR_1:
+          level->add_door(new Door{Pos{i, j}, 1});
+          break;
         case CHAR_SLOT_V0:
           level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_VERTICAL});
+          break;
+        case CHAR_SLOT_V1:
+          level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_VERTICAL});
+          break;
+        case CHAR_SLOT_H0:
+          level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_HORIZONTAL});
+          break;
+        case CHAR_SLOT_H1:
+          level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_HORIZONTAL});
           break;
         default: break; // Ignore everything else
       }
