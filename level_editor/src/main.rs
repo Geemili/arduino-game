@@ -60,15 +60,23 @@ fn main() {
     }
 }
 
-fn send_level(input: &mut Read, output: &mut Write) {
-    let mut level_data = vec![];
-    match input.read_to_end(&mut level_data) {
-        Ok(_) => {
-            output.write(level_data.as_slice()).unwrap();
-        },
-        _ => {
-            writeln!(io::stderr(), "Could not read standard input.").unwrap();
-            exit(2);
-        }
+// Reads level and prepares it to be sent
+fn read_level(input: &mut Read) -> String {
+    let mut buf = String::new();
+    input.read_to_string(&mut buf).unwrap();
+
+    let mut result = String::new();
+    let mut width = 0u8;
+    let mut height = 0u8;
+    for line in buf.trim().lines() {
+        result.push_str(line);
+        height += 1;
+        width = if line.len() as u8 > width {line.len() as u8} else {width};
     }
+    format!("{}{}{}", width as char, height as char, result)
+}
+
+fn send_level(input: &mut Read, output: &mut Write) {
+    let level = read_level(input);
+    write!(output, "{}", level).unwrap();
 }
