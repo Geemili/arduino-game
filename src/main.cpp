@@ -8,23 +8,12 @@
 #include "direction.h"
 #include "offset.h"
 #include "shapes.h"
+#include "nes.h"
 
 #ifndef OLED_RESET_PIN
 #define OLED_RESET_PIN 4
 #endif
 Adafruit_SSD1306 display(OLED_RESET_PIN);
-
-#define NES_LATCH 2
-#define NES_CLOCK 3
-#define NES_DATA_IN 4
-#define BTN_UP    B11110111
-#define BTN_DOWN  B11111011
-#define BTN_LEFT  B11111101
-#define BTN_RIGHT B11111110
-#define BTN_SELECT B11011111
-#define BTN_START B11101111
-#define BTN_A     B01111111
-#define BTN_B     B10111111
 
 #define SCREEN_MENU 0
 #define SCREEN_GAME 1
@@ -32,11 +21,15 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define SCREEN_LOAD_LEVEL 3
 #define SCREEN_SELECT_LEVEL 4
 
-byte current_screen = SCREEN_MENU;
+uint8_t current_screen = SCREEN_MENU;
 
-byte prev_controller_data = 0;
-byte controller_data = 0;
-bool input_latch = false;
+#define NES_LATCH 2
+#define NES_CLOCK 3
+#define NES_DATA_IN 4
+nes::Pad controller(NES_LATCH, NES_CLOCK, NES_DATA_IN);
+
+// Which option is selected on the pause menu
+int8_t selected = 0;
 
 // Tells SCREEN_LOAD_LEVEL which one to load and SCREEN_GAME which number to display
 uint8_t level_num = 0;
@@ -46,39 +39,8 @@ void setup() {
   display.begin();
   display.clearDisplay();
   display.display();
-
-  pinMode(NES_LATCH, OUTPUT);
-  pinMode(NES_CLOCK, OUTPUT);
-  pinMode(NES_DATA_IN, INPUT);
-
-  digitalWrite(NES_LATCH, HIGH);
-  digitalWrite(NES_CLOCK, HIGH);
-}
-
-void read_controller() {
-  prev_controller_data = controller_data;
-  controller_data = 0;
-  digitalWrite(NES_LATCH, LOW);
-  digitalWrite(NES_CLOCK, LOW);
-
-  digitalWrite(NES_LATCH, HIGH);
-  delayMicroseconds(2);
-  digitalWrite(NES_LATCH, LOW);
-
-  controller_data = digitalRead(NES_DATA_IN);
-
-  for (int i = 1; i <= 7; i++) {
-    digitalWrite(NES_CLOCK, HIGH);
-    delayMicroseconds(2);
-    controller_data = controller_data << 1;
-    controller_data = controller_data + digitalRead(NES_DATA_IN);
-    delayMicroseconds(4);
-    digitalWrite(NES_CLOCK, LOW);
-  }
-}
-
-bool is_pressed(byte data, byte button) {
-  return (data | button) == button;
+  controller.begin();
+  controller.update();
 }
 
 void draw_ui_crate(int offset, shapes::CrateShape shape) {
@@ -95,12 +57,12 @@ void draw_ui_crate(int offset, shapes::CrateShape shape) {
   }
 }
 
-byte screen_menu() {
-  if (controller_data == BTN_START) {
+uint8_t screen_menu() {
+  if (controller.just_released(nes::START)) {
     level_num = 0;
     return SCREEN_LOAD_LEVEL;
   }
-  if (controller_data == BTN_SELECT) {
+  if (controller.just_released(nes::SELECT)) {
     return SCREEN_SELECT_LEVEL;
   }
 
@@ -120,61 +82,37 @@ byte screen_menu() {
   return SCREEN_MENU;
 }
 
-byte screen_game() {
-  if (!is_pressed(prev_controller_data, BTN_START) && is_pressed(controller_data, BTN_START)) {
+uint8_t screen_game() {
+  if (controller.just_released(nes::START)) {
+    selected = 0;
     return SCREEN_PAUSE;
   }
 
   Offset player_offset = Offset{0,0};
   bool do_a = false;
   bool do_b = false;
-  switch (controller_data) {
-    case BTN_UP:
-      if (!input_latch) {
-        player_offset.y -= 1;
-        level->player_dir = direction::NORTH;
-      }
-      input_latch = true;
-      break;
-    case BTN_LEFT:
-      if (!input_latch) {
-        player_offset.x -= 1;
-        level->player_dir = direction::WEST;
-      }
-      input_latch = true;
-      break;
-    case BTN_RIGHT:
-      if (!input_latch) {
-        player_offset.x += 1;
-        level->player_dir = direction::EAST;
-      }
-      input_latch = true;
-      break;
-    case BTN_DOWN:
-      if (!input_latch) {
-        player_offset.y += 1;
-        level->player_dir = direction::SOUTH;
-      }
-      input_latch = true;
-      break;
-    case BTN_A:
-      if (!input_latch) do_a = true;
-      input_latch = true;
-      break;
-    case BTN_B:
-      if (!input_latch) do_b = true;
-      input_latch = true;
-      break;
-    default:
-      input_latch = false;
-      break;
+  if (controller.just_pressed(nes::UP)) {
+    player_offset.y -= 1;
+    level->player_dir = direction::NORTH;
+  } else if (controller.just_pressed(nes::LEFT)) {
+    player_offset.x -= 1;
+    level->player_dir = direction::WEST;
+  } else if (controller.just_pressed(nes::RIGHT)) {
+    player_offset.x += 1;
+    level->player_dir = direction::EAST;
+  } else if (controller.just_pressed(nes::DOWN)) {
+    player_offset.y += 1;
+    level->player_dir = direction::SOUTH;
   }
+
 
   Pos next_pos = get_pos_offset(level->player_pos, player_offset);
   if (level->is_open(next_pos)) {
     level->player_pos = next_pos;
   }
 
+  do_a = controller.just_pressed(nes::A);
+  do_b = controller.just_pressed(nes::B);
   if (do_a || do_b) {
     Pos pick_pos = get_pos_offset(level->player_pos, direction::offset(level->player_dir));
     if (do_a && level->player_item_a==NULL) {
@@ -299,43 +237,42 @@ byte screen_game() {
   return SCREEN_GAME;
 }
 
-byte screen_pause() {
-  int selected = 0;
-  while (true) {
-    read_controller();
-
-    if (!input_latch && is_pressed(controller_data, BTN_UP)) selected -= 1;
-    if (!input_latch && is_pressed(controller_data, BTN_DOWN)) selected += 1;
-    input_latch = (is_pressed(controller_data, BTN_DOWN) || is_pressed(controller_data, BTN_UP));
-    if (selected > 1) selected = 0;
-    if (selected < 0) selected = 1;
-    if (is_pressed(controller_data, BTN_A)) {
-        if (selected == 0) return SCREEN_GAME;
-        if (selected == 1) return SCREEN_MENU;
-    }
-
-    display.clearDisplay();
-    display.setTextColor(WHITE);
-
-    display.setTextSize(2);
-    display.setCursor(0, 0);
-    display.print("PAUSE");
-
-    display.setTextSize(1);
-    display.setCursor(16, 32);
-    display.print("Continue");
-    display.setCursor(16, 40);
-    display.print("Quit");
-
-    if (selected == 0) display.setCursor(0,32);
-    if (selected == 1) display.setCursor(0,40);
-    display.print(">");
-
-    display.display();
+uint8_t screen_pause() {
+  if (controller.just_released(nes::START)) {
+    return SCREEN_GAME;
   }
+
+  if (controller.just_pressed(nes::UP)) selected -= 1;
+  if (controller.just_pressed(nes::DOWN)) selected += 1;
+  if (selected > 1) selected = 0;
+  if (selected < 0) selected = 1;
+  if (controller.just_pressed(nes::A)) {
+      if (selected == 0) return SCREEN_GAME;
+      if (selected == 1) return SCREEN_MENU;
+  }
+
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+
+  display.setTextSize(2);
+  display.setCursor(0, 0);
+  display.print("PAUSE");
+
+  display.setTextSize(1);
+  display.setCursor(16, 32);
+  display.print("Continue");
+  display.setCursor(16, 40);
+  display.print("Quit");
+
+  if (selected == 0) display.setCursor(0,32);
+  if (selected == 1) display.setCursor(0,40);
+  display.print(">");
+
+  display.display();
+  return SCREEN_PAUSE;
 }
 
-byte screen_load_level() {
+uint8_t screen_load_level() {
   display.clearDisplay();
   display.setTextColor(WHITE);
 
@@ -352,29 +289,12 @@ byte screen_load_level() {
   return SCREEN_GAME;
 }
 
-byte screen_select_level() {
-  switch (controller_data) {
-    case BTN_UP:
-      if (!input_latch) {
-        level_num++;
-      }
-      input_latch = true;
-      break;
-    case BTN_DOWN:
-      if (!input_latch) {
-        level_num--;
-      }
-      input_latch = true;
-      break;
-    case BTN_A:
-      if (!input_latch) return SCREEN_LOAD_LEVEL;
-      input_latch = true;
-      break;
-    case BTN_B: return SCREEN_MENU;
-    default:
-      input_latch = false;
-      break;
-  }
+uint8_t screen_select_level() {
+
+  if (controller.just_pressed(nes::UP)) level_num += 1;
+  if (controller.just_pressed(nes::DOWN)) level_num -= 1;
+  if (controller.just_pressed(nes::A)) return SCREEN_LOAD_LEVEL;
+  if (controller.just_pressed(nes::B)) return SCREEN_MENU;
 
   display.clearDisplay();
   display.setTextColor(WHITE);
@@ -394,7 +314,7 @@ byte screen_select_level() {
 }
 
 void loop() {
-  read_controller();
+  controller.update();
   switch (current_screen) {
     case SCREEN_MENU:
       current_screen = screen_menu();
