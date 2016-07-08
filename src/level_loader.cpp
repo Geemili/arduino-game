@@ -25,6 +25,8 @@
 #define CHAR_DOOR_2 '2'
 #define CHAR_DOOR_3 '3'
 
+void load_level_match_character(Level *level, uint8_t i, uint8_t j, char c);
+
 Level *load_level(uint8_t level_num) {
   PGM_P level_address = get_level_address(level_num);
   // TODO: Make use of this. Ignoring length check right now
@@ -35,66 +37,82 @@ Level *load_level(uint8_t level_num) {
   Level *level = new Level(w, h);
   for (uint8_t j=0; j<h; j++) {
     for (uint8_t i=0; i<w; i++) {
-      int tile_index = (j * w) + i;
-      char c = pgm_read_byte_near(level_address + 2 + tile_index);
-      switch (c) {
-        case CHAR_WALL:
-          level->walls[tile_index] = true;
-          break;
-        case CHAR_EXIT:
-          level->exit_pos = Pos{i, j};
-          break;
-        case CHAR_PLAYER:
-          level->player_pos = Pos{i, j};
-          break;
-        case CHAR_CRATE_V:
-          level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_VERTICAL});
-          break;
-        case CHAR_CRATE_H:
-          level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_HORIZONTAL});
-          break;
-        case CHAR_CRATE_S:
-          level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_SMALL});
-          break;
-        case CHAR_DOOR_0:
-          level->add_door(new Door{Pos{i, j}, 0});
-          break;
-        case CHAR_DOOR_1:
-          level->add_door(new Door{Pos{i, j}, 1});
-          break;
-        case CHAR_DOOR_2:
-          level->add_door(new Door{Pos{i, j}, 2});
-          break;
-        case CHAR_DOOR_3:
-          level->add_door(new Door{Pos{i, j}, 3});
-          break;
-        case CHAR_SLOT_V0:
-          level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_VERTICAL});
-          break;
-        case CHAR_SLOT_V1:
-          level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_VERTICAL});
-          break;
-        case CHAR_SLOT_V2:
-          level->add_slot(new Slot{2, Pos{i, j}, shapes::SLOT_VERTICAL});
-          break;
-        case CHAR_SLOT_V3:
-          level->add_slot(new Slot{3, Pos{i, j}, shapes::SLOT_VERTICAL});
-          break;
-        case CHAR_SLOT_H0:
-          level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_HORIZONTAL});
-          break;
-        case CHAR_SLOT_H1:
-          level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_HORIZONTAL});
-          break;
-        case CHAR_SLOT_H2:
-          level->add_slot(new Slot{2, Pos{i, j}, shapes::SLOT_HORIZONTAL});
-          break;
-        case CHAR_SLOT_H3:
-          level->add_slot(new Slot{3, Pos{i, j}, shapes::SLOT_HORIZONTAL});
-          break;
-        default: break; // Ignore everything else
-      }
+      char c = pgm_read_byte_near(level_address + 2 + (j * w) + i);
+      load_level_match_character(level, i, j, c);
     }
   }
   return level;
+}
+
+Level *load_level_from_serial() {
+  uint8_t w = Serial.read();
+  uint8_t h = Serial.read();
+  Level *level = new Level(w, h);
+  for (uint8_t j=0; j<h; j++) {
+    for (uint8_t i=0; i<w; i++) {
+      char c = Serial.read();
+      load_level_match_character(level, i, j, c);
+    }
+  }
+  return level;
+}
+
+void load_level_match_character(Level *level, uint8_t i, uint8_t j, char c) {
+  switch (c) {
+    case CHAR_WALL:
+      level->walls[(j * level->width) + i] = true;
+      break;
+    case CHAR_EXIT:
+      level->exit_pos = Pos{i, j};
+      break;
+    case CHAR_PLAYER:
+      level->player_pos = Pos{i, j};
+      break;
+    case CHAR_CRATE_V:
+      level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_VERTICAL});
+      break;
+    case CHAR_CRATE_H:
+      level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_HORIZONTAL});
+      break;
+    case CHAR_CRATE_S:
+      level->add_crate(new Crate{Pos{i, j}, shapes::CRATE_SMALL});
+      break;
+    case CHAR_DOOR_0:
+      level->add_door(new Door{Pos{i, j}, 0});
+      break;
+    case CHAR_DOOR_1:
+      level->add_door(new Door{Pos{i, j}, 1});
+      break;
+    case CHAR_DOOR_2:
+      level->add_door(new Door{Pos{i, j}, 2});
+      break;
+    case CHAR_DOOR_3:
+      level->add_door(new Door{Pos{i, j}, 3});
+      break;
+    case CHAR_SLOT_V0:
+      level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_VERTICAL});
+      break;
+    case CHAR_SLOT_V1:
+      level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_VERTICAL});
+      break;
+    case CHAR_SLOT_V2:
+      level->add_slot(new Slot{2, Pos{i, j}, shapes::SLOT_VERTICAL});
+      break;
+    case CHAR_SLOT_V3:
+      level->add_slot(new Slot{3, Pos{i, j}, shapes::SLOT_VERTICAL});
+      break;
+    case CHAR_SLOT_H0:
+      level->add_slot(new Slot{0, Pos{i, j}, shapes::SLOT_HORIZONTAL});
+      break;
+    case CHAR_SLOT_H1:
+      level->add_slot(new Slot{1, Pos{i, j}, shapes::SLOT_HORIZONTAL});
+      break;
+    case CHAR_SLOT_H2:
+      level->add_slot(new Slot{2, Pos{i, j}, shapes::SLOT_HORIZONTAL});
+      break;
+    case CHAR_SLOT_H3:
+      level->add_slot(new Slot{3, Pos{i, j}, shapes::SLOT_HORIZONTAL});
+      break;
+    default: break; // Ignore everything else
+  }
 }

@@ -33,14 +33,18 @@ int8_t selected = 0;
 
 // Tells SCREEN_LOAD_LEVEL which one to load and SCREEN_GAME which number to display
 uint8_t level_num = 0;
+bool load_from_serial = false;
 Level *level;
 
 void setup() {
   display.begin();
   display.clearDisplay();
   display.display();
+
   controller.begin();
   controller.update();
+
+  Serial.begin(9600);
 }
 
 void draw_ui_crate(int offset, shapes::CrateShape shape) {
@@ -58,6 +62,12 @@ void draw_ui_crate(int offset, shapes::CrateShape shape) {
 }
 
 uint8_t screen_menu() {
+  Serial.println("ready");
+  if (Serial.available() > 0) {
+    load_from_serial = true;
+    return SCREEN_LOAD_LEVEL;
+  }
+
   if (controller.just_released(nes::START)) {
     level_num = 0;
     return SCREEN_LOAD_LEVEL;
@@ -285,7 +295,12 @@ uint8_t screen_load_level() {
   if (level != NULL) {
     delete level;
   }
-  level = load_level(level_num);
+  if (load_from_serial) {
+    level = load_level_from_serial();
+    load_from_serial = false;
+  } else {
+    level = load_level(level_num);
+  }
   return SCREEN_GAME;
 }
 

@@ -4,6 +4,7 @@
 
 #include "level.h"
 
+Level *load_level_from_serial();
 Level *load_level(uint8_t level);
 
 #endif
