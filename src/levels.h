@@ -13,7 +13,7 @@ const PROGMEM char LEVEL_00[] =
 const PROGMEM char LEVEL_01[] =
 "\x08\x03\
 ########\
-#@..k.!#\
+#@k...!#\
 ########";
 
 const PROGMEM char LEVEL_02[] =
