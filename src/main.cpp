@@ -20,6 +20,7 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 #define SCREEN_PAUSE 2
 #define SCREEN_LOAD_LEVEL 3
 #define SCREEN_SELECT_LEVEL 4
+#define SCREEN_LOAD_LEVEL_SERIAL 5
 
 uint8_t current_screen = SCREEN_MENU;
 
@@ -33,7 +34,7 @@ int8_t selected = 0;
 
 // Tells SCREEN_LOAD_LEVEL which one to load and SCREEN_GAME which number to display
 uint8_t level_num = 0;
-bool load_from_serial = false;
+bool serial_level = false;
 Level *level;
 
 void setup() {
@@ -62,10 +63,10 @@ void draw_ui_crate(int offset, shapes::CrateShape shape) {
 }
 
 uint8_t screen_menu() {
+  // Informs the topside loader that the device is ready
   Serial.println("ready");
   if (Serial.available() > 0) {
-    load_from_serial = true;
-    return SCREEN_LOAD_LEVEL;
+    return SCREEN_LOAD_LEVEL_SERIAL;
   }
 
   if (controller.just_released(nes::START)) {
@@ -241,6 +242,7 @@ uint8_t screen_game() {
   display.display();
 
   if (level->player_won()) {
+    if (serial_level) return SCREEN_MENU;
     level_num++;
     return SCREEN_LOAD_LEVEL;
   }
@@ -282,7 +284,7 @@ uint8_t screen_pause() {
   return SCREEN_PAUSE;
 }
 
-uint8_t screen_load_level() {
+void display_loading_screen() {
   display.clearDisplay();
   display.setTextColor(WHITE);
 
@@ -291,16 +293,28 @@ uint8_t screen_load_level() {
   display.print("LOADING...");
 
   display.display();
+}
+
+uint8_t screen_load_level() {
+  display_loading_screen();
 
   if (level != NULL) {
     delete level;
   }
-  if (load_from_serial) {
-    level = load_level_from_serial();
-    load_from_serial = false;
-  } else {
-    level = load_level(level_num);
+
+  level = load_level(level_num);
+  return SCREEN_GAME;
+}
+
+uint8_t screen_load_level_serial() {
+  display_loading_screen();
+
+  if (level != NULL) {
+    delete level;
   }
+
+  level = load_level_from_serial();
+  serial_level = true;
   return SCREEN_GAME;
 }
 
@@ -345,6 +359,9 @@ void loop() {
       break;
     case SCREEN_SELECT_LEVEL:
       current_screen = screen_select_level();
+      break;
+    case SCREEN_LOAD_LEVEL_SERIAL:
+      current_screen = screen_load_level_serial();
       break;
     default:
       display.clearDisplay();
