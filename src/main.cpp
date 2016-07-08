@@ -34,6 +34,7 @@ Adafruit_SSD1306 display(OLED_RESET_PIN);
 
 byte current_screen = SCREEN_MENU;
 
+byte prev_controller_data = 0;
 byte controller_data = 0;
 bool input_latch = false;
 
@@ -55,6 +56,7 @@ void setup() {
 }
 
 void read_controller() {
+  prev_controller_data = controller_data;
   controller_data = 0;
   digitalWrite(NES_LATCH, LOW);
   digitalWrite(NES_CLOCK, LOW);
@@ -75,8 +77,8 @@ void read_controller() {
   }
 }
 
-bool is_pressed(byte button) {
-  return (controller_data | button) == button;
+bool is_pressed(byte data, byte button) {
+  return (data | button) == button;
 }
 
 void draw_ui_crate(int offset, shapes::CrateShape shape) {
@@ -119,6 +121,10 @@ byte screen_menu() {
 }
 
 byte screen_game() {
+  if (!is_pressed(prev_controller_data, BTN_START) && is_pressed(controller_data, BTN_START)) {
+    return SCREEN_PAUSE;
+  }
+
   Offset player_offset = Offset{0,0};
   bool do_a = false;
   bool do_b = false;
@@ -159,11 +165,6 @@ byte screen_game() {
       if (!input_latch) do_b = true;
       input_latch = true;
       break;
-    case BTN_START:
-      if (!input_latch) return SCREEN_PAUSE;
-      input_latch = true;
-      break;
-    // case BTN_SELECT: display.print("SELECT"); break;
     default:
       input_latch = false;
       break;
@@ -303,12 +304,12 @@ byte screen_pause() {
   while (true) {
     read_controller();
 
-    if (!input_latch && is_pressed(BTN_UP)) selected -= 1;
-    if (!input_latch && is_pressed(BTN_DOWN)) selected += 1;
-    input_latch = (is_pressed(BTN_DOWN) || is_pressed(BTN_UP));
+    if (!input_latch && is_pressed(controller_data, BTN_UP)) selected -= 1;
+    if (!input_latch && is_pressed(controller_data, BTN_DOWN)) selected += 1;
+    input_latch = (is_pressed(controller_data, BTN_DOWN) || is_pressed(controller_data, BTN_UP));
     if (selected > 1) selected = 0;
     if (selected < 0) selected = 1;
-    if (is_pressed(BTN_A)) {
+    if (is_pressed(controller_data, BTN_A)) {
         if (selected == 0) return SCREEN_GAME;
         if (selected == 1) return SCREEN_MENU;
     }
