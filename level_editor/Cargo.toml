@@ -1,0 +1,6 @@
+[package]
+name = "level_editor"
+version = "0.1.0"
+authors = ["geemili <minergeemili@gmail.com>"]
+
+[dependencies]
