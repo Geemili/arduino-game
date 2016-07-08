@@ -37,6 +37,14 @@ const PROGMEM char LEVEL_04[] =
 #...0.k#\
 ##f#####";
 
+const PROGMEM char LEVEL_05[] =
+"\x08\x05\
+###f####\
+#@.l21!#\
+#.#b####\
+#.l.0.k#\
+####h###";
+
 const PROGMEM char LEVEL_FF[] =
 "\x09\x05\
 #a##b##h#\
@@ -52,6 +60,7 @@ PGM_P get_level_address(uint8_t num) {
     case 0x02: return LEVEL_02;
     case 0x03: return LEVEL_03;
     case 0x04: return LEVEL_04;
+    case 0x05: return LEVEL_05;
     case 0xFF: return LEVEL_FF;
   }
   return LEVEL_00;

@@ -143,27 +143,38 @@ void Level::pick_up_crate(Pos pos, bool item_slot_a) {
 }
 
 void Level::place_crate(Pos pos, bool item_slot_a) {
+  // Check that we actually have a crate to place
   if (item_slot_a && this->player_item_a == NULL) return;
   else if (!item_slot_a && this->player_item_b == NULL) return;
-  bool wall = this->get_wall(pos);
-  Crate *other_crate = this->crate_at(pos);
-  Slot *slot = this->slot_at(pos);
-  if (!wall && other_crate == NULL) {
-    Crate *crate;
-    if (item_slot_a) {
-      crate = this->player_item_a;
-    } else {
-      crate = this->player_item_b;
-    }
 
-    if (slot == NULL || shapes::shape_fits(crate->shape, slot->shape)) {
-      crate->pos = pos;
-      this->add_crate(crate);
-      if (item_slot_a) {
-        this->player_item_a = NULL;
-      } else {
-        this->player_item_b = NULL;
-      }
+  // Make sure that there is no wall there
+  if(this->get_wall(pos)) return;
+  
+  // Don't let players place inside of doors
+  Door *door = this->door_at(pos);
+  if (door != NULL) return;
+
+  // Don't place on top of other crates
+  Crate *other_crate = this->crate_at(pos);
+  if (other_crate != NULL) return;
+
+  // Pull out the crate that we are using
+  Crate *crate;
+  if (item_slot_a) {
+    crate = this->player_item_a;
+  } else {
+    crate = this->player_item_b;
+  }
+
+  Slot *slot = this->slot_at(pos);
+  if (slot == NULL || shapes::shape_fits(crate->shape, slot->shape)) {
+    crate->pos = pos;
+    // Place the crate
+    this->add_crate(crate);
+    if (item_slot_a) {
+      this->player_item_a = NULL;
+    } else {
+      this->player_item_b = NULL;
     }
   }
 }
