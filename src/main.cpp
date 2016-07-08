@@ -221,7 +221,11 @@ uint8_t screen_game() {
   display.setTextColor(WHITE);
 
   display.setCursor(0, 0);
-  display.print(level_num, HEX);
+  if (!serial_level) {
+    display.print(level_num);
+  } else {
+    display.print("DEV");
+  }
 
   int crate_offset = 16;
 
