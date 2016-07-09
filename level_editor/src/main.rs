@@ -17,6 +17,8 @@ fn main() {
         exit(1);
     }
 
+    let level = read_level(&mut io::stdin());
+
     let mut port = serial::open(&args[0]).unwrap();
     let mut settings = serial::PortSettings::default();
     settings.set_char_size(serial::CharSize::Bits8);
@@ -30,34 +32,9 @@ fn main() {
         return;
     }
 
-    let mut buf = vec![0; 256];
-    let mut message = String::new();
-    loop {
-        match port.read(&mut buf[..]) {
-            Ok(bytes_read) => {
-                for i in 0..bytes_read {
-                    match buf[i] as char {
-                        '\n' if message.trim()=="ready" => {
-                            send_level(&mut io::stdin(), &mut port);
-                            return;
-                        }
+    port.set_timeout(Duration::from_millis(10000)).unwrap();
 
-                        '\n' => {
-                            println!("{}", message=="ready");
-                            message.clear();
-                        }
-
-                        character => message.push(character)
-                    }
-                }
-            }
-
-            Err(e) => {
-                println!("error: {}", e);
-            }
-        }
-        sleep(Duration::from_millis(100));
-    }
+    send_level(&mut port, &level);
 }
 
 // Reads level and prepares it to be sent
@@ -76,7 +53,22 @@ fn read_level(input: &mut Read) -> String {
     format!("{}{}{}", width as char, height as char, result)
 }
 
-fn send_level(input: &mut Read, output: &mut Write) {
-    let level = read_level(input);
-    write!(output, "{}", level).unwrap();
+fn send_level(port: &mut SerialPort, level: &String) -> bool {
+    let mut buf = String::new();
+    let mut should_send = false;
+    for b in port.bytes() {
+        match std::char::from_u32(b.unwrap() as u32).unwrap()  {
+            '\n' if buf.trim() == "ready" => {
+                should_send = true;
+                break;
+            },
+            '\n' => buf.clear(),
+            character => buf.push(character),
+        }
+    }
+    if should_send {
+        write!(port, "{}", level).unwrap();
+        return true;
+    }
+    return false;
 }
