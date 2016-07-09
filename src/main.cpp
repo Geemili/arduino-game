@@ -307,6 +307,7 @@ uint8_t screen_load_level() {
   }
 
   level = load_level(level_num);
+  serial_level = false;
   return SCREEN_GAME;
 }
 
