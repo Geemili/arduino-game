@@ -82,7 +82,7 @@ uint8_t screen_menu() {
 
   display.setTextSize(2);
   display.setCursor(0, 0);
-  display.print("ROUGELIKE");
+  display.print("GAME");
 
   display.setTextSize(1);
   display.setCursor(0, 32);
