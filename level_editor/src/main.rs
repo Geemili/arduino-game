@@ -34,7 +34,17 @@ fn main() {
 
     port.set_timeout(Duration::from_millis(10000)).unwrap();
 
-    send_level(&mut port, &level);
+    println!("Level: {} {} {}", level.as_bytes()[0], level.as_bytes()[1], level.split_at(2).1);
+    println!("Uploading...");
+    if send_level(&mut port, &level) {
+        println!("Finished.");
+    } else {
+        println!("Failed.");
+    }
+
+    for b in port.bytes() {
+        print!("{}", std::char::from_u32(b.unwrap() as u32).unwrap());
+    }
 }
 
 // Reads level and prepares it to be sent
@@ -42,13 +52,23 @@ fn read_level(input: &mut Read) -> String {
     let mut buf = String::new();
     input.read_to_string(&mut buf).unwrap();
 
-    let mut result = String::new();
+    let mut lines = vec![];
     let mut width = 0u8;
     let mut height = 0u8;
     for line in buf.trim().lines() {
-        result.push_str(line);
+        lines.push(line);
         height += 1;
         width = if line.len() as u8 > width {line.len() as u8} else {width};
+    }
+    let mut result = String::new();
+    for line in lines {
+        result.push_str(line);
+        let mut w = line.len() as u8;
+        println!("Line short by {}", width - w);
+        while w < width {
+            w+=1;
+            result.push('#');
+        }
     }
     format!("{}{}{}", width as char, height as char, result)
 }
