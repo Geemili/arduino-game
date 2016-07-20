@@ -1,5 +1,6 @@
 
 #include <avr/io.h>
+#include <stdio.h>
 #include <util/delay.h>
 #include <i2c_master.h>
 
@@ -9,6 +10,7 @@
 void setup_i2c();
 void clear_display();
 void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color);
+void draw_ascii(uint8_t col, uint8_t page, uint8_t number);
 
 int main (void)
 {
@@ -32,19 +34,28 @@ int main (void)
   clear_display();
   int16_t x = 0;
   int16_t y = 0;
+  int16_t w = 1;
+  int16_t h = 1;
+
+  // Set up timer
+  TCCR1B |= ((1 << CS10) | (1 << CS12));
+
   while (1) {
     // clear_display();
-    draw_rect(x, y, 5, 6, 0);
-    y++;
-    if (y > 64) {
-      x+=5;
-      y = 0;
+    // draw_rect(x, y, w, h, 0);
+    // w++; h++;
+    // if (w >= 128) w = 0;
+    // if (h >= 64) h = 0;
+
+    char str[15];
+    uint32_t time_to_draw = TCNT1;
+    time_to_draw *= 64;
+    sprintf(str, "%lu", time_to_draw);
+    TCNT1 = 0;
+    for (uint8_t i=0; i<15; i++) {
+      if (str[i] == 0) break;
+      draw_ascii(i*6, 0, str[i]);
     }
-    if (x > 128) {
-      x = 0;
-    }
-    draw_rect(x, y, 5, 6, 1);
-    _delay_ms(500);
   }
 }
 
@@ -94,7 +105,8 @@ void clear_display() {
 }
 
 void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
-  if (x >= 128 || y >= 64) return;
+  if (w==0 || x >= 128 || h==0 || y >= 64) return;
+  w--;
 
   uint8_t start_col = x,
           end_col = 127,
@@ -158,6 +170,123 @@ void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
   }
 
   if (open) i2c_stop();
+
+  TWBR = twbr_prev;
+}
+
+void draw_ascii(uint8_t col, uint8_t page, uint8_t number) {
+  if (col >= 128 || page >= 8) return;
+
+  i2c_start(OLED_ADDRESS + I2C_WRITE);
+  i2c_write(0x00); // Command mode
+
+  i2c_write(0x21); // Column
+  i2c_write(col);    // start
+  i2c_write(col+4);
+
+  i2c_write(0x22); // Page address / row adress
+  i2c_write(page); // start
+  i2c_write(page);
+
+  i2c_stop();
+
+  uint8_t twbr_prev = TWBR;
+  TWBR = 12;
+
+  unsigned char ret = i2c_start(OLED_ADDRESS + I2C_WRITE);
+  i2c_write(0x40); // Data mode
+  if (ret) {
+    i2c_stop();
+    PORTB |= _BV(PORTB5);
+  } else {
+    switch (number) {
+      case 0x30: // 0
+        i2c_write(0b01111100);
+        i2c_write(0b10100010);
+        i2c_write(0b10010010);
+        i2c_write(0b10001010);
+        i2c_write(0b01111100);
+        break;
+      case 0x31: // 1
+        i2c_write(0b00000000);
+        i2c_write(0b10000100);
+        i2c_write(0b11111110);
+        i2c_write(0b10000000);
+        i2c_write(0b00000000);
+        break;
+      case 0x32: // 2
+        i2c_write(0b10000100);
+        i2c_write(0b11000010);
+        i2c_write(0b10100010);
+        i2c_write(0b10010010);
+        i2c_write(0b10001100);
+        break;
+      case 0x33: // 3
+        i2c_write(0b01000010);
+        i2c_write(0b10000010);
+        i2c_write(0b10001010);
+        i2c_write(0b10010110);
+        i2c_write(0b01100010);
+        break;
+      case 0x34: // 4
+        i2c_write(0b00110000);
+        i2c_write(0b00101000);
+        i2c_write(0b00100100);
+        i2c_write(0b11111110);
+        i2c_write(0b00100000);
+        break;
+      case 0x35: // 5
+        i2c_write(0b01001110);
+        i2c_write(0b10001010);
+        i2c_write(0b10001010);
+        i2c_write(0b10001010);
+        i2c_write(0b01110010);
+        break;
+      case 0x36: // 6
+        i2c_write(0b01111000);
+        i2c_write(0b10010100);
+        i2c_write(0b10010010);
+        i2c_write(0b10010010);
+        i2c_write(0b01100010);
+        break;
+      case 0x37: // 7
+        i2c_write(0b00000010);
+        i2c_write(0b11100010);
+        i2c_write(0b00010010);
+        i2c_write(0b00001010);
+        i2c_write(0b00000110);
+        break;
+      case 0x38: // 8
+        i2c_write(0b01101100);
+        i2c_write(0b10010010);
+        i2c_write(0b10010010);
+        i2c_write(0b10010010);
+        i2c_write(0b01101100);
+        break;
+      case 0x39: // 9
+        i2c_write(0b00001100);
+        i2c_write(0b10010010);
+        i2c_write(0b10010010);
+        i2c_write(0b01010010);
+        i2c_write(0b00111100);
+        break;
+      default:
+        i2c_write(0b11111111);
+        i2c_write(0b10000001);
+        i2c_write(0b10000001);
+        i2c_write(0b10000001);
+        i2c_write(0b11111111);
+        break;
+      // case 0x4:
+      //   i2c_write(0b00000000);
+      //   i2c_write(0b00000000);
+      //   i2c_write(0b00000000);
+      //   i2c_write(0b00000000);
+      //   i2c_write(0b00000000);
+      //   break;
+    }
+  }
+  i2c_stop();
 
   TWBR = twbr_prev;
 }
