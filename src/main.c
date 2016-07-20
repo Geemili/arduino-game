@@ -185,7 +185,7 @@ void setup_i2c() {
   i2c_write(63); // 1/64 duty cycle
 
   i2c_write(0xD3); // Set display offset to...
-  i2c_write(0x1);  // 1. If it is left at 0 it is offset by 1
+  i2c_write(0x0);  // 1. If it is left at 0 it is offset by 1
 
   i2c_write(0xD5); // Set display clk
   i2c_write(0x80);
