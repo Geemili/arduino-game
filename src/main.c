@@ -10,7 +10,6 @@
 
 void setup_i2c();
 void clear_display();
-void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color);
 void draw_ascii(uint8_t col, uint8_t page, char *text, uint8_t len);
 
 int main (void)
@@ -34,30 +33,24 @@ int main (void)
   }
 
   clear_display();
-  // int16_t x = 0;
-  // int16_t y = 0;
-  // int16_t w = 1;
-  // int16_t h = 1;
+  uint8_t x = 1;
+  uint8_t y = 2;
 
   // Set up timer
   TCCR1B |= ((1 << CS10) | (1 << CS12));
 
-  static char str[22];
-  static uint32_t time_to_draw;
+  static char str[21];
+  static uint16_t last_render_time = 0;
   while (1) {
-    // clear_display();
-    // draw_rect(x, y, w, h, 0);
-    // w++; h++;
-    // if (w >= 128) w = 0;
-    // if (h >= 64) h = 0;
-    time_to_draw = TCNT1 * 64;
-    sprintf(str, "Text for DAYZ %lu", time_to_draw);
-    TCNT1 = 0;
-    draw_ascii(0, 0, str, 21);
-
-    for (uint8_t i=1; i<8; i++) {
-      sprintf(str, "The quick brown fox j");
-      draw_ascii(0, i, str, 21);
+    if (TCNT1-last_render_time >= 1920) { // Render every 30 ms
+      for (uint8_t j=0; j<8; j++) {
+        for (uint8_t i=0; i<21; i++) {
+          if (y==j && x==i) {str[i] = '@';}
+          else {str[i] = '.';}
+        }
+        draw_ascii(0, j, str, 21);
+      }
+      last_render_time = TCNT1;
     }
   }
 }
@@ -103,76 +96,6 @@ void clear_display() {
   }
 
   if (num_transmitted != 0) i2c_stop();
-
-  TWBR = twbr_prev;
-}
-
-void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
-  if (w==0 || x >= 128 || h==0 || y >= 64) return;
-  w--;
-
-  uint8_t start_col = x,
-          end_col = 127,
-          start_page = y>>3,
-          end_page = 7;
-
-  if (x+w < 128) {
-    end_col = x+w;
-  }
-
-  if (y+h < 64) {
-    end_page = (y+h)>>3;
-  }
-
-  i2c_start(OLED_ADDRESS + I2C_WRITE);
-  i2c_write(0x00); // Command mode
-
-  i2c_write(0x21); // Column
-  i2c_write(start_col);    // start
-  i2c_write(end_col);
-
-  i2c_write(0x22); // Page address / row adress
-  i2c_write(start_page); // start
-  i2c_write(end_page);
-
-  i2c_stop();
-
-  uint8_t twbr_prev = TWBR;
-  TWBR = 12;
-
-  unsigned char ret;
-  uint8_t num_transmitted = 0;
-  uint8_t open = 0;
-  for (uint16_t page=start_page; page<=end_page; page++) {
-    for (uint16_t col=start_col; col<=end_col; col++) {
-      if (num_transmitted==0) {
-        ret = i2c_start(OLED_ADDRESS + I2C_WRITE);
-        open = 1;
-        i2c_write(0x40); // Data mode
-      }
-      if (ret) {
-        i2c_stop();
-        open = 0;
-        PORTB |= _BV(PORTB5);
-      } else {
-        uint8_t segment = 0x00;
-        for (uint8_t i=0; i<8; i++) {
-          if (((page*8 + i) >= y) && ((page*8 + i) < (y+h))) {
-            segment |= (color << i);
-          }
-        }
-        i2c_write(segment);
-        num_transmitted++;
-        if (num_transmitted==16) {
-          i2c_stop();
-          open = 0;
-          num_transmitted = 0;
-        }
-      }
-    }
-  }
-
-  if (open) i2c_stop();
 
   TWBR = twbr_prev;
 }
