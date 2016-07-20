@@ -33,7 +33,7 @@ int main (void)
   int16_t x = 0;
   int16_t y = 0;
   while (1) {
-    // clear_display(0, 0, 0, 0);
+    // clear_display();
     draw_rect(x, y, 5, 6, 0);
     y++;
     if (y > 64) {
@@ -44,6 +44,7 @@ int main (void)
       x = 0;
     }
     draw_rect(x, y, 5, 6, 1);
+    _delay_ms(500);
   }
 }
 
@@ -60,6 +61,10 @@ void clear_display() {
   i2c_write(0x7);
 
   i2c_stop();
+
+  // TURBO MODE
+  uint8_t twbr_prev = TWBR;
+  TWBR = 12;
 
   unsigned char ret;
   uint8_t num_transmitted = 0;
@@ -84,6 +89,8 @@ void clear_display() {
   }
 
   if (num_transmitted != 0) i2c_stop();
+
+  TWBR = twbr_prev;
 }
 
 void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
@@ -115,14 +122,14 @@ void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
 
   i2c_stop();
 
-  // uint8_t twbr_prev = TWBR;
-  // TWBR = 12;
+  uint8_t twbr_prev = TWBR;
+  TWBR = 12;
 
   unsigned char ret;
   uint8_t num_transmitted = 0;
   uint8_t open = 0;
   for (uint16_t page=start_page; page<=end_page; page++) {
-    for (uint16_t col=start_col; col<end_col; col++) {
+    for (uint16_t col=start_col; col<=end_col; col++) {
       if (num_transmitted==0) {
         ret = i2c_start(OLED_ADDRESS + I2C_WRITE);
         open = 1;
@@ -152,7 +159,7 @@ void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
 
   if (open) i2c_stop();
 
-  // TWBR = twbr_prev;
+  TWBR = twbr_prev;
 }
 
 void setup_i2c() {
