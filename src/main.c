@@ -4,6 +4,7 @@
 #include <util/delay.h>
 #include <i2c_master.h>
 #include "font.h"
+#include "nes.h"
 
 #define OLED_ADDRESS 0x78 // 0x3c << 1
 #define BLINK_DELAY_MS 1000
@@ -22,6 +23,7 @@ int main (void)
   PORTB &= ~_BV(PORTB5);
 
   i2c_init();
+  nes_pad_init();
 
   ret = i2c_start(OLED_ADDRESS + I2C_WRITE);
   i2c_stop();
@@ -41,9 +43,21 @@ int main (void)
 
   static char str[21];
   static uint16_t last_render_time = 0;
+  uint16_t last_update_time = 0;
   while (1) {
+    if (TCNT1-last_update_time >= 1920) {
+      nes_pad_update();
+      if (nes_pad_just_pressed(NES_LEFT)) x--;
+      if (nes_pad_just_pressed(NES_RIGHT)) x++;
+      if (nes_pad_just_pressed(NES_UP)) y--;
+      if (nes_pad_just_pressed(NES_DOWN)) y++;
+      last_update_time = TCNT1;
+    }
+
     if (TCNT1-last_render_time >= 1920) { // Render every 30 ms
-      for (uint8_t j=0; j<8; j++) {
+      sprintf(str, "Delta: %d", TCNT1-last_render_time);
+      draw_ascii(0, 0, str, 21);
+      for (uint8_t j=1; j<8; j++) {
         for (uint8_t i=0; i<21; i++) {
           if (y==j && x==i) {str[i] = '@';}
           else {str[i] = '.';}
