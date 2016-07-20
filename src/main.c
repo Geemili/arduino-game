@@ -37,7 +37,7 @@ int main (void)
     draw_rect(x, y, 5, 6, 0);
     y++;
     if (y > 64) {
-      x++;
+      x+=5;
       y = 0;
     }
     if (x > 128) {
@@ -102,6 +102,19 @@ void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
     end_page = (y+h)>>3;
   }
 
+  i2c_start(OLED_ADDRESS + I2C_WRITE);
+  i2c_write(0x00); // Command mode
+
+  i2c_write(0x21); // Column
+  i2c_write(start_col);    // start
+  i2c_write(end_col);
+
+  i2c_write(0x22); // Page address / row adress
+  i2c_write(start_page); // start
+  i2c_write(end_page);
+
+  i2c_stop();
+
   // uint8_t twbr_prev = TWBR;
   // TWBR = 12;
 
@@ -109,27 +122,10 @@ void draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint8_t color) {
   uint8_t num_transmitted = 0;
   uint8_t open = 0;
   for (uint16_t page=start_page; page<=end_page; page++) {
-    if (open) {
-      i2c_stop();
-      open = 0;
-      num_transmitted = 0;
-    }
-    i2c_start(OLED_ADDRESS + I2C_WRITE);
-    i2c_write(0x00); // Command mode
-
-    i2c_write(0x21); // Column
-    i2c_write(start_col);    // start
-    i2c_write(end_col);
-
-    i2c_write(0x22); // Page address / row adress
-    i2c_write(page); // start
-    i2c_write(page);
-
-    i2c_stop();
     for (uint16_t col=start_col; col<end_col; col++) {
       if (num_transmitted==0) {
-        open = 1;
         ret = i2c_start(OLED_ADDRESS + I2C_WRITE);
+        open = 1;
         i2c_write(0x40); // Data mode
       }
       if (ret) {
