@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <util/delay.h>
 #include <i2c_master.h>
-#include <avr/interrupt.h>
 #include "font.h"
 #include "nes.h"
 
@@ -14,12 +13,7 @@ void setup_i2c();
 void clear_display();
 void draw_ascii(uint8_t col, uint8_t page, char *text, uint8_t len);
 
-// These two values store our random bits. Every time the ADC is read,
-// `random_bits` is shifted 1 bit to the left, and the lowest bit of ADCL
-// is added. `randomness` is then incremented by one, up to a maximum of
-// 32.
-uint32_t random_bits;
-uint8_t randomness;
+uint8_t random_bits;
 
 int main (void)
 {
@@ -29,18 +23,6 @@ int main (void)
   // Set pin 5 of PORTB (aka pin 13) to output and turn LED off
   DDRB |= _BV(DDB5);
   PORTB &= ~_BV(PORTB5);
-
-  // Turn on Analog to Digital converter to get random bits
-  ADCSRA |= (1 << ADPS2) || (1 << ADPS1) | (1 << ADPS0); //
-  ADMUX &= ~((1 << REFS1) | (1 << REFS0)); // Set ADC reference to AVCC
-  ADCSRA |= (1 << ADATE); // Allow special i/o functions for ADC
-  ADCSRB &= ~((1 << ADTS2) | (1 << ADTS1) | (1 << ADTS0));
-  ADCSRA |= (1 << ADEN); // Enable the ADC
-  ADCSRA |= (1 << ADIE); // Use interrupts
-  sei(); // Enable interrupts
-
-  ADCSRA |= (1 << ADSC); // Start the adc
-
 
   i2c_init();
   nes_pad_init();
@@ -66,22 +48,20 @@ int main (void)
   uint16_t last_update_time = 0;
   uint8_t random_number = 0;
   while (1) {
+    random_bits++;
     if (TCNT1-last_update_time >= 1920) {
       nes_pad_update();
       if (nes_pad_just_pressed(NES_LEFT)) x--;
       if (nes_pad_just_pressed(NES_RIGHT)) x++;
       if (nes_pad_just_pressed(NES_UP)) y--;
       if (nes_pad_just_pressed(NES_DOWN)) y++;
+      if (nes_pad_just_pressed(NES_A)) random_number = random_bits;
       last_update_time = TCNT1;
-      if (randomness >= 8) {
-        random_number = (random_bits >> (randomness - 8)) & 0xFF;
-        randomness -= 8;
-      }
     }
 
     if (TCNT1-last_render_time >= 1920) { // Render every 30 ms
       uint16_t current_time = TCNT1;
-      sprintf(str, "%d  RNG: %08lX", TCNT1-last_render_time, random_bits);
+      sprintf(str, "%d  RNG: %02X", TCNT1-last_render_time, random_number);
       draw_ascii(0, 0, str, 21);
       for (uint8_t j=1; j<8; j++) {
         for (uint8_t i=0; i<21; i++) {
@@ -235,15 +215,4 @@ void setup_i2c() {
   i2c_write(0xAF);
 
   i2c_stop();
-}
-
-// Define interrupt for our ADC. We will be using the lowest bit to get
-// randomness
-ISR(ADC_vect) {
-  random_bits <<= 1;
-  random_bits += ADCL & 0x1;
-  randomness++;
-  if (randomness > 32) {
-    randomness = 32;
-  }
 }
